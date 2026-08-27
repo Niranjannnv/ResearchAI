@@ -195,7 +195,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-6">
+    <div className="mx-auto w-full max-w-3xl px-4 pb-4">
       {/* Hidden File Input */}
       <input
         type="file"
@@ -207,7 +207,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
 
       <form
         onSubmit={handleSubmit}
-        className={`relative rounded-2xl border bg-white p-3 shadow-subtle transition-all focus-within:shadow-float ${
+        className={`relative rounded-2xl border bg-white px-3.5 py-2 shadow-subtle transition-all focus-within:shadow-float ${
           isListening
             ? "border-emerald-500 ring-2 ring-emerald-500/20"
             : "border-gray-200/90 focus-within:border-gray-300"
@@ -277,24 +277,24 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
           }
           disabled={disabled}
           rows={1}
-          className="w-full resize-none bg-transparent px-2 py-1 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:opacity-50 min-h-[44px]"
+          className="w-full resize-none bg-transparent px-1 py-0.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:opacity-50 min-h-[24px] leading-relaxed"
         />
 
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-2">
-          <div className="flex items-center gap-1 text-gray-400">
+        <div className="flex items-center justify-between pt-1 mt-1 border-t border-gray-100/80">
+          <div className="flex items-center gap-0.5 text-gray-400">
             {/* Attachment Button */}
             <button
               type="button"
               onClick={handleFileClick}
               disabled={isUploading || disabled}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-1.5 rounded-lg transition-colors ${
                 attachedDoc
                   ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                   : "hover:bg-gray-100 hover:text-gray-700"
               }`}
               title="Upload reference files (.pdf, .docx, .txt, .md, .csv)"
             >
-              <Paperclip className="h-4 w-4" />
+              <Paperclip className="h-3.5 w-3.5" />
             </button>
 
             {/* Voice Input Microphone Button */}
@@ -302,7 +302,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
               type="button"
               onClick={toggleVoiceInput}
               disabled={disabled}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-1.5 rounded-lg transition-all ${
                 isListening
                   ? "bg-red-50 text-red-600 ring-2 ring-red-400/50 scale-105"
                   : "hover:bg-gray-100 hover:text-gray-700"
@@ -310,9 +310,9 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
               title={isListening ? "Stop listening" : "Voice speech-to-text input"}
             >
               {isListening ? (
-                <MicOff className="h-4 w-4 animate-pulse" />
+                <MicOff className="h-3.5 w-3.5 animate-pulse" />
               ) : (
-                <Mic className="h-4 w-4" />
+                <Mic className="h-3.5 w-3.5" />
               )}
             </button>
           </div>
@@ -320,14 +320,14 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
           <button
             type="submit"
             disabled={(!content.trim() && !attachedDoc) || disabled}
-            className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-xs transition-all hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="h-7 w-7 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-xs transition-all hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ArrowUp className="h-4 w-4" />
+            <ArrowUp className="h-3.5 w-3.5" />
           </button>
         </div>
       </form>
 
-      <div className="text-center pt-2 text-[11px] text-gray-400">
+      <div className="text-center pt-1.5 text-[11px] text-gray-400">
         ResearchAI searches OpenAlex, PubMed, arXiv, Semantic Scholar, CORE, Europe PMC, and Books.
       </div>
     </div>
