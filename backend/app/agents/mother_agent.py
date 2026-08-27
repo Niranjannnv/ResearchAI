@@ -578,8 +578,14 @@ async def stream_research(
     """
     clean_q = query.strip().lower().rstrip("!?.")
 
-    # 1. Immediate Conversational Greeting / Intent Interception
-    if clean_q in CONVERSATIONAL_QUERIES or (len(clean_q.split()) <= 2 and clean_q in CONVERSATIONAL_QUERIES):
+    # 1. Immediate Conversational Greeting / Short Query Interception
+    is_short_or_trivial = len(clean_q) <= 3 or clean_q in {
+        "hey", "hi", "hello", "hola", "howdy", "sup", "hoo", "yo", "hlo", "heyy", "heya",
+        "who", "what", "help", "test", "testing", "thanks", "thank", "bye", "goodbye", "ok", "okay",
+        "good morning", "good afternoon", "good evening", "how are you", "who are you", "what can you do"
+    }
+
+    if is_short_or_trivial or clean_q in CONVERSATIONAL_QUERIES or (len(clean_q.split()) <= 2 and any(clean_q.startswith(g) for g in ["hey", "hi", "hello", "good morning", "good evening", "how are you"])):
         yield {"type": "status", "message": "Ready"}
         assistant_msg = (
             "Hello! I am **ResearchAI**, an enterprise-grade multi-agent scientific intelligence platform.\n\n"

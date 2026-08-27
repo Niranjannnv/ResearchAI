@@ -107,7 +107,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       messages: [...state.messages, userMsg],
       isStreaming: true,
-      streamStatus: "Initializing Mother Agent...",
+      streamStatus: "Understanding research inquiry",
       activeAgents: [],
       liveSources: [],
       liveCitations: [],
