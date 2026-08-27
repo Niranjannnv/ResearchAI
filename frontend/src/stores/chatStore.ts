@@ -38,15 +38,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
   abortController: null,
 
   stopStreaming: () => {
-    const { abortController } = get();
+    const { abortController, currentChat } = get();
     if (abortController) {
       abortController.abort();
     }
-    set({
+    const stoppedMsg: Message = {
+      id: "stopped-" + Date.now(),
+      chat_id: currentChat?.id || "new",
+      role: "assistant",
+      content: "_Research paused by user._",
+      metadata_: { stopped: true },
+      created_at: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [...state.messages, stoppedMsg],
       isStreaming: false,
       streamStatus: null,
       abortController: null,
-    });
+    }));
   },
 
   fetchChats: async () => {

@@ -109,8 +109,15 @@ export function ChatMessage({ message }: ChatMessageProps) {
           </div>
         </div>
 
-        {/* Render the Full Detailed Multi-Section Report if Available */}
-        {fetchedReport ? (
+        {/* Render ChatGPT-Style Stopped State if Research was Paused */}
+        {message.metadata_?.stopped || message.content === "_Research paused by user._" ? (
+          <div className="space-y-3 pt-1">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-gray-100/90 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200/60">
+              <span className="h-2 w-2 rounded-xs bg-gray-500" />
+              <span>Research paused (generation stopped by user)</span>
+            </div>
+          </div>
+        ) : fetchedReport ? (
           <div className="pt-1">
             <ReportPreview content={fetchedReport} reportId={reportId} />
           </div>
