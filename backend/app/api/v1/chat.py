@@ -23,9 +23,92 @@ from app.schemas.chat import (
     SendMessageRequest,
 )
 from app.services.chat_service import ChatService
+from fastapi import UploadFile, File
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/chats", tags=["Chat"])
+
+
+@router.post("/upload-document")
+async def upload_document(
+    current_user: CurrentUser,
+    file: UploadFile = File(...),
+):
+    """
+    Upload and parse a research reference document (.pdf, .docx, .txt, .md, .csv).
+    Extracts structured text to incorporate directly into multi-agent research synthesis.
+    """
+    filename = file.filename or "document.txt"
+    content_bytes = await file.read()
+    file_size = len(content_bytes)
+
+    if file_size > 25 * 1024 * 1024:  # 25 MB max limit
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size exceeds the 25MB limit.",
+        )
+
+    extracted_text = ""
+    page_count = 1
+
+    try:
+        lower_name = filename.lower()
+        if lower_name.endswith(".pdf"):
+            import io
+            from pypdf import PdfReader
+            pdf_reader = PdfReader(io.BytesIO(content_bytes))
+            page_count = len(pdf_reader.pages)
+            pages_text = []
+            for i, page in enumerate(pdf_reader.pages[:50]):  # up to 50 pages
+                t = page.extract_text()
+                if t:
+                    pages_text.append(f"--- Page {i+1} ---\n{t}")
+            extracted_text = "\n\n".join(pages_text)
+
+        elif lower_name.endswith(".docx"):
+            import io
+            from docx import Document
+            doc = Document(io.BytesIO(content_bytes))
+            extracted_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+
+        elif lower_name.endswith((".txt", ".md", ".csv", ".json")):
+            try:
+                extracted_text = content_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                extracted_text = content_bytes.decode("latin-1", errors="ignore")
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported file format. Please upload .pdf, .docx, .txt, .md, or .csv files.",
+            )
+
+        if not extracted_text.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No readable text could be extracted from this document.",
+            )
+
+        word_count = len(extracted_text.split())
+        preview = extracted_text[:400] + ("..." if len(extracted_text) > 400 else "")
+
+        return {
+            "filename": filename,
+            "size": file_size,
+            "page_count": page_count,
+            "word_count": word_count,
+            "text": extracted_text,
+            "preview": preview,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Document parsing failed", error=str(e), filename=filename)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to parse document: {str(e)}",
+        )
+
 
 
 @router.get("", response_model=ChatHistoryResponse)
