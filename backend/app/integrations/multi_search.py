@@ -333,7 +333,6 @@ async def multi_web_search(query: str, max_results: int = 15) -> List[Dict]:
         searxng_search(query, max_results=per_source),
         bing_search(query, max_results=per_source),
         mojeek_search(query, max_results=per_source),
-        internet_archive_search(query, max_results=3),
         google_cse_search(query, max_results=per_source),
         return_exceptions=True,
     )
@@ -357,13 +356,15 @@ async def multi_news_search(query: str, max_results: int = 15) -> List[Dict]:
     """
     Run news-specific searches from multiple sources in parallel.
     """
-    news_query = f"{query} news"
-    per_source = max(max_results // 3, 3)
+    clean_query = query.replace(" news", "").replace(" latest", "").strip()
+    news_query = f"{clean_query} news"
+    per_source = max(max_results // 3, 4)
 
     tasks = await asyncio.gather(
         duckduckgo_search(news_query, max_results=per_source),
-        searxng_search(f"{query} news latest", max_results=per_source),
-        bing_search(f"{query} news 2024 2025", max_results=per_source),
+        bing_search(f"{clean_query} breaking news top stories", max_results=per_source),
+        searxng_search(f"{clean_query} news latest", max_results=per_source),
+        google_cse_search(news_query, max_results=per_source),
         return_exceptions=True,
     )
 

@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "gemini-1.5-pro"
+    LLM_MODEL: str = "gemini-3.5-flash"
     LLM_TEMPERATURE: float = 0.2
     LLM_MAX_TOKENS: int = 8192
 
