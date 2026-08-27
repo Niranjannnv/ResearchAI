@@ -586,15 +586,15 @@ async def stream_research(
     }
 
     NODE_LABELS = {
-        "planner": "🔍 Understanding your research question...",
-        "task_manager": "🚀 Gathering data from multiple sources...",
-        "aggregator": "📥 Collecting results from all databases...",
-        "verifier": "✅ Verifying source credibility...",
-        "deduplication": "🔄 Filtering and refining results...",
-        "ranker": "📊 Ranking sources by quality and relevance...",
-        "summarizer": "📝 Synthesizing findings across sources...",
-        "citation_generator": "📚 Formatting citations...",
-        "report_generator": "📋 Writing your research report...",
+        "planner": "Understanding research inquiry",
+        "task_manager": "Searching scholarly databases",
+        "aggregator": "Aggregating academic sources",
+        "verifier": "Verifying empirical evidence",
+        "deduplication": "Filtering and refining results",
+        "ranker": "Ranking sources by relevance",
+        "summarizer": "Synthesizing cross-disciplinary findings",
+        "citation_generator": "Compiling citations and references",
+        "report_generator": "Generating comprehensive report",
     }
 
     current_state = dict(initial_state)
