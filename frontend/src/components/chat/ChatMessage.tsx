@@ -2,11 +2,24 @@
 
 import React, { useState, useEffect } from "react";
 import { Message, SourceResult, CitationItem, ReportContent } from "@/types";
-import { Sparkles, User, FileText, ChevronDown, ChevronUp, Bookmark as BookmarkIcon, Loader2 } from "lucide-react";
+import {
+  Sparkles,
+  User,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Bookmark as BookmarkIcon,
+  Loader2,
+  Copy,
+  Check,
+  Pencil,
+  RotateCcw,
+} from "lucide-react";
 import { CitationCard } from "./CitationCard";
 import { ReportPreview } from "../reports/ReportPreview";
 import { DownloadButton } from "../reports/DownloadButton";
 import { api } from "@/lib/api";
+import { useChatStore } from "@/stores/chatStore";
 
 interface ChatMessageProps {
   message: Message;
@@ -14,8 +27,14 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const { sendMessage } = useChatStore();
+
   const [showCitations, setShowCitations] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
+
   const [fetchedReport, setFetchedReport] = useState<ReportContent | null>(
     message.metadata_?.report || null
   );
@@ -49,6 +68,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
     }
   }, [reportId, fetchedReport, isUser]);
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const handleBookmark = async () => {
     try {
       await api.post("/bookmarks", {
@@ -63,13 +88,83 @@ export function ChatMessage({ message }: ChatMessageProps) {
     }
   };
 
+  const handleSaveEdit = () => {
+    if (!editContent.trim()) return;
+    setIsEditing(false);
+    sendMessage(message.chat_id, editContent.trim());
+  };
+
   if (isUser) {
     return (
-      <div className="flex gap-4 py-6 border-b border-gray-100 px-6 justify-end">
-        <div className="max-w-2xl rounded-2xl bg-gray-100/90 px-4 py-3 text-sm text-gray-900 leading-relaxed font-medium">
-          {message.content}
+      <div className="group flex gap-3 py-4 border-b border-gray-100/70 px-4 sm:px-6 justify-end">
+        <div className="flex flex-col items-end space-y-1.5 max-w-2xl w-full sm:w-auto">
+          {isEditing ? (
+            /* Inline Edit Box */
+            <div className="w-full sm:w-[480px] rounded-2xl border border-emerald-500 bg-white p-3 shadow-md">
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={3}
+                className="w-full resize-none bg-transparent text-sm text-gray-900 focus:outline-none"
+                autoFocus
+              />
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditContent(message.content);
+                  }}
+                  className="rounded-lg px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={!editContent.trim()}
+                  className="rounded-lg bg-emerald-600 px-3.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-40 transition-colors"
+                >
+                  Save & Submit
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Standard User Message Bubble */
+            <div className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm text-gray-900 leading-relaxed font-medium">
+              {message.content}
+            </div>
+          )}
+
+          {/* Action Bar (Copy & Edit) */}
+          {!isEditing && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                title="Copy message"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                title="Edit message"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
         </div>
-        <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-gray-200 text-gray-700 text-xs font-semibold">
+
+        <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-slate-200 text-slate-700 text-xs font-semibold">
           <User className="h-4 w-4" />
         </div>
       </div>
@@ -77,12 +172,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
   }
 
   return (
-    <div className="flex gap-4 py-6 border-b border-gray-100 bg-white px-4 sm:px-6">
+    <div className="group flex gap-4 py-6 border-b border-gray-100 bg-white px-4 sm:px-6">
       <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
         <Sparkles className="h-4 w-4" />
       </div>
 
-      <div className="flex-1 space-y-4 max-w-4xl">
+      <div className="flex-1 space-y-3.5 max-w-4xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-gray-900">
@@ -93,8 +188,23 @@ export function ChatMessage({ message }: ChatMessageProps) {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Copy button */}
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+              title="Copy response"
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </button>
+
             {reportId && <DownloadButton reportId={reportId} />}
+
             <button
               onClick={handleBookmark}
               className={`p-1.5 rounded-lg border text-xs transition-colors ${
