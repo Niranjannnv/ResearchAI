@@ -58,7 +58,10 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
     { code: "en-US", label: "English (US)" },
     { code: "en-GB", label: "English (UK)" },
     { code: "hi-IN", label: "Hindi (हिंदी)" },
+    { code: "ml-IN", label: "Malayalam (മലയാളം)" },
     { code: "ta-IN", label: "Tamil (தமிழ்)" },
+    { code: "te-IN", label: "Telugu (తెలుగు)" },
+    { code: "kn-IN", label: "Kannada (ಕನ್ನಡ)" },
     { code: "auto", label: "Auto Detect" },
   ];
 
