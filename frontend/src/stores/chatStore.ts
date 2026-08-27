@@ -13,6 +13,7 @@ interface ChatState {
   liveSources: SourceResult[];
   liveCitations: CitationItem[];
   liveReport: ReportContent | null;
+  abortController: AbortController | null;
 
   fetchChats: () => Promise<void>;
   createChat: (title?: string) => Promise<string>;
@@ -20,6 +21,7 @@ interface ChatState {
   deleteChat: (chatId: string) => Promise<void>;
   renameChat: (chatId: string, title: string) => Promise<void>;
   sendMessage: (chatId: string, content: string) => Promise<void>;
+  stopStreaming: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -33,6 +35,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
   liveSources: [],
   liveCitations: [],
   liveReport: null,
+  abortController: null,
+
+  stopStreaming: () => {
+    const { abortController } = get();
+    if (abortController) {
+      abortController.abort();
+    }
+    set({
+      isStreaming: false,
+      streamStatus: null,
+      abortController: null,
+    });
+  },
 
   fetchChats: async () => {
     try {
@@ -104,6 +119,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       created_at: new Date().toISOString(),
     };
 
+    const controller = new AbortController();
+
     set((state) => ({
       messages: [...state.messages, userMsg],
       isStreaming: true,
@@ -112,6 +129,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       liveSources: [],
       liveCitations: [],
       liveReport: null,
+      abortController: controller,
     }));
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -125,6 +143,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ content, stream: true }),
+        signal: controller.signal,
       });
 
       if (!response.body) throw new Error("No response body");
@@ -145,7 +164,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           if (line.startsWith("data: ")) {
             const jsonStr = line.replace("data: ", "").trim();
             if (jsonStr === "[DONE]") {
-              set({ isStreaming: false, streamStatus: null });
+              set({ isStreaming: false, streamStatus: null, abortController: null });
               // Refresh chat to get persistent IDs & metadata
               if (targetChatId !== "new") {
                 get().selectChat(targetChatId);
@@ -183,6 +202,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     liveCitations: [],
                     isStreaming: false,
                     streamStatus: null,
+                    abortController: null,
                   }));
                 } else {
                   set({
@@ -191,6 +211,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     liveCitations: event.citations || [],
                     isStreaming: false,
                     streamStatus: null,
+                    abortController: null,
                   });
                 }
               }
@@ -200,11 +221,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }
         }
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === "AbortError") {
+        set({ isStreaming: false, streamStatus: null, abortController: null });
+        return;
+      }
       console.error("Stream failed", e);
       set({
         isStreaming: false,
         streamStatus: "Research encountered an issue. Please try again.",
+        abortController: null,
       });
     }
   },

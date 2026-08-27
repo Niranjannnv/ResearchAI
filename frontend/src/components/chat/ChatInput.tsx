@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { ArrowUp, Paperclip, Mic, MicOff, FileText, X, Loader2 } from "lucide-react";
+import { ArrowUp, Paperclip, Mic, MicOff, FileText, X, Loader2, Square } from "lucide-react";
 import { api } from "@/lib/api";
+import { useChatStore } from "@/stores/chatStore";
 
 interface AttachedDoc {
   filename: string;
@@ -19,6 +20,7 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
+  const { isStreaming, stopStreaming } = useChatStore();
   const [content, setContent] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -317,13 +319,24 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
             </button>
           </div>
 
-          <button
-            type="submit"
-            disabled={(!content.trim() && !attachedDoc) || disabled}
-            className="h-7 w-7 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-xs transition-all hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <ArrowUp className="h-3.5 w-3.5" />
-          </button>
+          {isStreaming ? (
+            <button
+              type="button"
+              onClick={stopStreaming}
+              className="h-7 w-7 rounded-full bg-slate-900 flex items-center justify-center text-white shadow-xs transition-all hover:bg-black hover:scale-105 active:scale-95"
+              title="Stop / Pause research"
+            >
+              <Square className="h-2.5 w-2.5 fill-current" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={(!content.trim() && !attachedDoc) || disabled}
+              className="h-7 w-7 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-xs transition-all hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </form>
 
