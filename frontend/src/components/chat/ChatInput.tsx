@@ -46,6 +46,8 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
     };
   }, []);
 
+  const baseTextRef = useRef<string>("");
+
   // Voice speech-to-text handler
   const toggleVoiceInput = () => {
     if (isListening) {
@@ -73,20 +75,28 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
       recognition.lang = "en-US";
 
       recognition.onstart = () => {
+        baseTextRef.current = content.trim();
         setIsListening(true);
       };
 
       recognition.onresult = (event: any) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
+        let final = "";
+        let interim = "";
+
+        for (let i = 0; i < event.results.length; i++) {
+          const item = event.results[i];
+          const transcript = item[0].transcript;
+          if (item.isFinal) {
+            final += transcript + " ";
+          } else {
+            interim += transcript;
+          }
         }
-        if (transcript) {
-          setContent((prev) => {
-            const cleanPrev = prev.trim();
-            return cleanPrev ? `${cleanPrev} ${transcript}` : transcript;
-          });
-        }
+
+        const base = baseTextRef.current;
+        const prefix = base ? `${base} ` : "";
+        const fullText = (prefix + final + interim).trimStart();
+        setContent(fullText);
       };
 
       recognition.onerror = (event: any) => {
