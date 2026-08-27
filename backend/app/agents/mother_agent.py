@@ -90,12 +90,20 @@ async def planner_node(state: AgentState) -> AgentState:
     system_prompt = """You are the Research Planner for ResearchAI. 
 Your job is to analyze a user's research question and produce a structured execution plan.
 
+Guidelines for Agent Selection:
+- If the query is about breaking events, recent news, corporate actions, or company developments (e.g. "what happened yesterday at OpenAI", "recent events in Japan", "Tesla quarterly announcement"):
+  - Set domain to "news", "technology", or "economics".
+  - Always include "news" and "web" in agents_to_use.
+  - Derive sub-queries with specific names, entities, and latest dates.
+- If the query is scholarly/scientific/medical:
+  - Include "academic" and/or "medical".
+
 Respond ONLY with valid JSON matching this schema:
 {
   "query": "the original query",
-  "domain": "one of: general|medical|science|technology|social|economics|legal|history",
+  "domain": "one of: general|medical|science|technology|social|economics|legal|history|news",
   "sub_queries": ["list of 2-5 specific search queries derived from the main question"],
-  "agents_to_use": ["list of agents: academic|medical|web|news|books|patent|government|statistics"],
+  "agents_to_use": ["list of agents from: academic|medical|web|news|books|patent|government|statistics"],
   "reasoning": "brief explanation of why these agents and queries were chosen"
 }"""
 
