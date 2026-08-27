@@ -77,6 +77,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
       recognition.onstart = () => {
         baseTextRef.current = content.trim();
         setIsListening(true);
+        textareaRef.current?.focus();
       };
 
       recognition.onresult = (event: any) => {
@@ -106,6 +107,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
 
       recognition.onend = () => {
         setIsListening(false);
+        textareaRef.current?.focus();
       };
 
       recognitionRef.current = recognition;
@@ -156,9 +158,14 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
     setUploadError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if ((!content.trim() && !attachedDoc) || disabled) return;
+
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
 
     let finalPrompt = content.trim();
 
@@ -175,11 +182,6 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
     setAttachedDoc(null);
     setUploadError(null);
 
-    if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
-
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -188,7 +190,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      handleSubmit();
     }
   };
 
