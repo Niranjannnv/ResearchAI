@@ -247,6 +247,19 @@ async def send_message(
                     yield f"data: {json.dumps(event)}\n\n"
 
                 elif event["type"] == "complete":
+                    if event.get("conversational"):
+                        assistant_content = event.get("message", "Hello! How can I assist with your research inquiry today?")
+                        await service.add_message(
+                            chat_id=real_chat_id,
+                            role="assistant",
+                            content=assistant_content,
+                            metadata={},
+                        )
+                        await service.update_task_status(task.id, TaskStatus.COMPLETED)
+                        await db.commit()
+                        yield f"data: {json.dumps({'type': 'complete', 'chat_id': str(real_chat_id), 'content': assistant_content, 'report': None, 'sources': []})}\n\n"
+                        continue
+
                     final_report = event.get("report")
                     all_sources = event.get("sources", [])
                     all_citations = event.get("citations", [])

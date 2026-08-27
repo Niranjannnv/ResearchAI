@@ -168,13 +168,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     window.history.replaceState(null, "", `/chat/${targetChatId}`);
                   }
                 }
-                set({
-                  liveReport: event.report || null,
-                  liveSources: event.sources || [],
-                  liveCitations: event.citations || [],
-                  isStreaming: false,
-                  streamStatus: null,
-                });
+                if (event.content && !event.report) {
+                  const assistantMsg: Message = {
+                    id: "msg-" + Date.now(),
+                    chat_id: targetChatId,
+                    role: "assistant",
+                    content: event.content,
+                    created_at: new Date().toISOString(),
+                  };
+                  set((s) => ({
+                    messages: [...s.messages, assistantMsg],
+                    liveReport: null,
+                    liveSources: [],
+                    liveCitations: [],
+                    isStreaming: false,
+                    streamStatus: null,
+                  }));
+                } else {
+                  set({
+                    liveReport: event.report || null,
+                    liveSources: event.sources || [],
+                    liveCitations: event.citations || [],
+                    isStreaming: false,
+                    streamStatus: null,
+                  });
+                }
               }
             } catch (err) {
               // Ignore non-json lines

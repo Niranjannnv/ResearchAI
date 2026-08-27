@@ -558,6 +558,15 @@ async def run_research(
     return final_state
 
 
+CONVERSATIONAL_QUERIES = {
+    "hey", "hi", "hello", "hola", "howdy", "sup", "greetings",
+    "good morning", "good afternoon", "good evening",
+    "who are you", "what are you", "what can you do", "help",
+    "test", "testing", "thanks", "thank you", "bye", "goodbye",
+    "hey there", "hi there", "hello there", "hello ai", "how are you"
+}
+
+
 async def stream_research(
     query: str,
     chat_id: str,
@@ -567,6 +576,29 @@ async def stream_research(
     Execute the research pipeline with streaming status updates.
     Yields SSE-compatible events at each node transition.
     """
+    clean_q = query.strip().lower().rstrip("!?.")
+
+    # 1. Immediate Conversational Greeting / Intent Interception
+    if clean_q in CONVERSATIONAL_QUERIES or (len(clean_q.split()) <= 2 and clean_q in CONVERSATIONAL_QUERIES):
+        yield {"type": "status", "message": "Ready"}
+        assistant_msg = (
+            "Hello! I am **ResearchAI**, an enterprise-grade multi-agent scientific intelligence platform.\n\n"
+            "I can investigate academic inquiries, cross-reference peer-reviewed literature across PubMed, arXiv, OpenAlex, Semantic Scholar, and Google Books, and synthesize publication-quality analytical intelligence reports.\n\n"
+            "**Try asking a research inquiry such as:**\n"
+            "• *What are the latest breakthroughs in solid-state lithium battery electrolytes?*\n"
+            "• *Analyze recent clinical trials for mRNA cancer therapeutics.*\n"
+            "• *Compare quantum computing error mitigation vs fault-tolerant architectures.*"
+        )
+        yield {
+            "type": "complete",
+            "conversational": True,
+            "message": assistant_msg,
+            "report": None,
+            "sources": [],
+            "citations": [],
+        }
+        return
+
     initial_state: AgentState = {
         "query": query,
         "chat_id": chat_id,

@@ -65,7 +65,25 @@ async def _fetch_json(url: str, params: Optional[Dict] = None, headers: Optional
         return {}
 
 
-def _build_result(title: str, url: str, snippet: str = "", publisher: str = "", date: str = "", source_type: str = "web") -> Dict:
+BLOCKED_KEYWORDS = {
+    "xnxx", "xvideos", "pornhub", "redtube", "youporn", "xhamster",
+    "sex stories", "adult forum", "camgirls", "erotic", "nsfw", "warez",
+}
+
+
+def _is_safe_result(title: str, url: str, snippet: str) -> bool:
+    """Filter out adult domains, spam networks, and malicious sites."""
+    combined = f"{title} {url} {snippet}".lower()
+    for kw in BLOCKED_KEYWORDS:
+        if kw in combined:
+            return False
+    return True
+
+
+def _build_result(title: str, url: str, snippet: str = "", publisher: str = "", date: str = "", source_type: str = "web") -> Optional[Dict]:
+    if not _is_safe_result(title, url, snippet):
+        return None
+
     return {
         "title": title,
         "authors": [],
@@ -325,6 +343,8 @@ async def multi_web_search(query: str, max_results: int = 15) -> List[Dict]:
     for batch in tasks:
         if isinstance(batch, list):
             for item in batch:
+                if not item or not isinstance(item, dict):
+                    continue
                 url = item.get("url", "")
                 if url and url not in seen_urls and item.get("title"):
                     seen_urls.add(url)
@@ -352,6 +372,8 @@ async def multi_news_search(query: str, max_results: int = 15) -> List[Dict]:
     for batch in tasks:
         if isinstance(batch, list):
             for item in batch:
+                if not item or not isinstance(item, dict):
+                    continue
                 url = item.get("url", "")
                 if url and url not in seen_urls and item.get("title"):
                     seen_urls.add(url)
