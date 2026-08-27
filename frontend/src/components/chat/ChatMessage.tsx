@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { Message, SourceResult, CitationItem, ReportContent } from "@/types";
 import {
   Sparkles,
@@ -14,6 +15,7 @@ import {
   Check,
   Pencil,
   RotateCcw,
+  ArrowUpRight,
 } from "lucide-react";
 import { CitationCard } from "./CitationCard";
 import { ReportPreview } from "../reports/ReportPreview";
@@ -237,9 +239,49 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <span>Loading full detailed enterprise report...</span>
           </div>
         ) : (
-          /* Fallback Text Summary */
-          <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed whitespace-pre-line text-sm">
-            {message.content}
+          /* Rich Markdown & Interactive Suggestion Cards */
+          <div className="text-gray-800 leading-relaxed text-sm">
+            <ReactMarkdown
+              components={{
+                strong: ({ node, ...props }) => (
+                  <span className="font-semibold text-gray-900" {...props} />
+                ),
+                p: ({ node, ...props }) => (
+                  <p className="mb-3 last:mb-0 text-sm leading-relaxed text-gray-700" {...props} />
+                ),
+                ul: ({ node, ...props }) => (
+                  <ul className="space-y-2 my-3 list-none pl-0" {...props} />
+                ),
+                li: ({ node, children, ...props }) => {
+                  // Extract raw string to pass to search
+                  const rawString = React.Children.toArray(children)
+                    .map((c) => (typeof c === "string" ? c : (c as any)?.props?.children || ""))
+                    .join("")
+                    .replace(/^[•*\-\s]+|[•*\-\s]+$/g, "")
+                    .trim();
+
+                  return (
+                    <li
+                      onClick={() => {
+                        if (rawString.length > 5) {
+                          sendMessage(message.chat_id, rawString);
+                        }
+                      }}
+                      className="group/pill flex items-center justify-between gap-3 rounded-xl border border-emerald-200/70 bg-gradient-to-r from-emerald-50/80 to-teal-50/40 hover:from-emerald-100/90 hover:to-teal-100/70 hover:border-emerald-400/80 px-4 py-2.5 text-xs font-medium text-emerald-950 cursor-pointer shadow-xs transition-all active:scale-[0.99]"
+                      title={`Click to research: "${rawString}"`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        <span className="font-medium text-emerald-900">{children}</span>
+                      </div>
+                      <ArrowUpRight className="h-4 w-4 text-emerald-600 opacity-60 group-hover/pill:opacity-100 group-hover/pill:translate-x-0.5 group-hover/pill:-translate-y-0.5 transition-all shrink-0" />
+                    </li>
+                  );
+                },
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
           </div>
         )}
 
