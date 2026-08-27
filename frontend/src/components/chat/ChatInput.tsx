@@ -50,6 +50,18 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
 
   const baseTextRef = useRef<string>("");
 
+  const [voiceLang, setVoiceLang] = useState<string>("en-IN");
+  const [showLangMenu, setShowLangMenu] = useState(false);
+
+  const SUPPORTED_LANGS = [
+    { code: "en-IN", label: "English (India)" },
+    { code: "en-US", label: "English (US)" },
+    { code: "en-GB", label: "English (UK)" },
+    { code: "hi-IN", label: "Hindi (हिंदी)" },
+    { code: "ta-IN", label: "Tamil (தமிழ்)" },
+    { code: "auto", label: "Auto Detect" },
+  ];
+
   // Voice speech-to-text handler
   const toggleVoiceInput = () => {
     if (isListening) {
@@ -74,7 +86,13 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = "en-US";
+      
+      const activeLang = voiceLang === "auto"
+        ? (typeof navigator !== "undefined" ? navigator.language || "en-IN" : "en-IN")
+        : voiceLang;
+        
+      recognition.lang = activeLang;
+      recognition.maxAlternatives = 3;
 
       recognition.onstart = () => {
         baseTextRef.current = content.trim();
@@ -299,24 +317,60 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
               <Paperclip className="h-3.5 w-3.5" />
             </button>
 
-            {/* Voice Input Microphone Button */}
-            <button
-              type="button"
-              onClick={toggleVoiceInput}
-              disabled={disabled}
-              className={`p-1.5 rounded-lg transition-all ${
-                isListening
-                  ? "bg-red-50 text-red-600 ring-2 ring-red-400/50 scale-105"
-                  : "hover:bg-gray-100 hover:text-gray-700"
-              }`}
-              title={isListening ? "Stop listening" : "Voice speech-to-text input"}
-            >
-              {isListening ? (
-                <MicOff className="h-3.5 w-3.5 animate-pulse" />
-              ) : (
-                <Mic className="h-3.5 w-3.5" />
+            {/* Voice Input Microphone Button + Language Selector */}
+            <div className="relative flex items-center">
+              <button
+                type="button"
+                onClick={toggleVoiceInput}
+                disabled={disabled}
+                className={`p-1.5 rounded-l-lg transition-all border-r border-gray-200/60 ${
+                  isListening
+                    ? "bg-red-50 text-red-600 ring-2 ring-red-400/50 scale-105"
+                    : "hover:bg-gray-100 hover:text-gray-700"
+                }`}
+                title={isListening ? `Stop listening (${voiceLang})` : `Voice input (${voiceLang})`}
+              >
+                {isListening ? (
+                  <MicOff className="h-3.5 w-3.5 animate-pulse" />
+                ) : (
+                  <Mic className="h-3.5 w-3.5" />
+                )}
+              </button>
+
+              {/* Language dropdown toggle */}
+              <button
+                type="button"
+                onClick={() => setShowLangMenu((p) => !p)}
+                disabled={isListening || disabled}
+                className="px-1 py-1.5 rounded-r-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors text-[10px] leading-none font-semibold disabled:opacity-40"
+                title="Change voice language"
+              >
+                {voiceLang === "auto" ? "🌐" : voiceLang.split("-")[0].toUpperCase()}
+              </button>
+
+              {/* Language dropdown menu */}
+              {showLangMenu && (
+                <div className="absolute bottom-full left-0 mb-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px]">
+                  {SUPPORTED_LANGS.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => {
+                        setVoiceLang(lang.code);
+                        setShowLangMenu(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                        voiceLang === lang.code
+                          ? "bg-emerald-50 text-emerald-700 font-semibold"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
               )}
-            </button>
+            </div>
           </div>
 
           {isStreaming ? (
