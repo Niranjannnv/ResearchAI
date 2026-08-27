@@ -536,6 +536,24 @@ async def run_research(
     Execute the full research pipeline and return the completed state.
     Called by Celery workers for background processing.
     """
+    from app.core.safety import moderate_query
+    is_blocked, refusal_reason = moderate_query(query)
+    if is_blocked:
+        return {
+            "query": query,
+            "chat_id": chat_id,
+            "user_id": user_id,
+            "report": None,
+            "error": refusal_reason,
+            "active_agents": [],
+            "raw_results": [],
+            "verified_results": [],
+            "deduplicated_results": [],
+            "ranked_results": [],
+            "summaries": {},
+            "citations": [],
+        }
+
     initial_state: AgentState = {
         "query": query,
         "chat_id": chat_id,
@@ -576,6 +594,22 @@ async def stream_research(
     Execute the research pipeline with streaming status updates.
     Yields SSE-compatible events at each node transition.
     """
+    from app.core.safety import moderate_query
+
+    # 1. Content Moderation & Policy Check (Abusive, Sexual, Harmful Queries)
+    is_blocked, refusal_reason = moderate_query(query)
+    if is_blocked:
+        yield {"type": "status", "message": "Policy Check"}
+        yield {
+            "type": "complete",
+            "conversational": True,
+            "message": refusal_reason,
+            "report": None,
+            "sources": [],
+            "citations": [],
+        }
+        return
+
     clean_q = query.strip().lower().rstrip("!?.")
 
     # 1. Immediate Conversational Greeting / Short Query Interception
