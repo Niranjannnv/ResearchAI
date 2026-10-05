@@ -8,11 +8,14 @@ import { Report } from "@/types";
 import { api } from "@/lib/api";
 import { FileText, Calendar, Database, Eye, Trash2, ArrowRight } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const fetchReports = async () => {
     try {
@@ -33,26 +36,43 @@ export default function ReportsPage() {
     fetchReports();
   }, []);
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Delete this research report?")) {
-      await api.delete(`/reports/${id}`);
-      setReports(reports.filter((r) => r.id !== id));
-      if (selectedReport?.id === id) {
-        setSelectedReport(null);
-      }
-    }
+    setPendingDeleteId(id);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    setConfirmOpen(false);
+    await api.delete(`/reports/${pendingDeleteId}`);
+    setReports(reports.filter((r) => r.id !== pendingDeleteId));
+    if (selectedReport?.id === pendingDeleteId) setSelectedReport(null);
+    setPendingDeleteId(null);
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmOpen(false);
+    setPendingDeleteId(null);
   };
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-slate-50/40">
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete Research Report"
+        message="This report and all its exports will be permanently deleted. This action cannot be undone."
+        confirmLabel="Delete Report"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
       <Header title="Research Reports Repository" />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Reports List */}
-        <div className="w-full sm:w-96 border-r border-gray-100 overflow-y-auto p-4 space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+        <div className="w-full sm:w-96 border-r border-slate-200 overflow-y-auto p-4 space-y-3 bg-white">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Generated Reports ({reports.length})
             </h3>
           </div>
@@ -62,8 +82,8 @@ export default function ReportsPage() {
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
             </div>
           ) : reports.length === 0 ? (
-            <div className="py-12 text-center text-xs text-gray-400 space-y-2">
-              <FileText className="h-8 w-8 mx-auto text-gray-300" />
+            <div className="py-12 text-center text-xs text-slate-500 space-y-2">
+              <FileText className="h-8 w-8 mx-auto text-slate-300" />
               <p>No research reports generated yet.</p>
             </div>
           ) : (
@@ -75,32 +95,32 @@ export default function ReportsPage() {
                   onClick={() => setSelectedReport(report)}
                   className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2 ${
                     isSelected
-                      ? "bg-emerald-50/50 border-emerald-300 shadow-xs"
-                      : "bg-white border-gray-200/80 hover:border-gray-300 hover:shadow-subtle"
+                      ? "bg-emerald-50/70 border-emerald-300 shadow-xs"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-subtle"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-xs font-semibold text-gray-900 line-clamp-2">
+                    <h4 className="text-xs font-bold text-slate-900 line-clamp-2">
                       {report.title}
                     </h4>
                     <button
-                      onClick={(e) => handleDelete(report.id, e)}
-                      className="text-gray-300 hover:text-red-500 p-1 rounded"
+                      onClick={(e) => handleDeleteClick(report.id, e)}
+                      className="text-slate-400 hover:text-red-600 p-1 rounded"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
 
-                  <p className="text-[11px] text-gray-500 line-clamp-2">
+                  <p className="text-[11px] text-slate-600 line-clamp-2 font-normal">
                     {report.summary || report.query}
                   </p>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-[11px] text-gray-400">
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-500 font-medium">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {formatDate(report.created_at)}
                     </span>
-                    <span className="flex items-center gap-1 font-medium text-emerald-700">
+                    <span className="flex items-center gap-1 font-semibold text-emerald-800">
                       <Database className="h-3 w-3" />
                       {report.source_count || 0} Sources
                     </span>
@@ -112,11 +132,11 @@ export default function ReportsPage() {
         </div>
 
         {/* Report Preview Panel */}
-        <div className="hidden sm:flex flex-1 flex-col overflow-y-auto p-6">
+        <div className="hidden sm:flex flex-1 flex-col overflow-y-auto p-6 bg-slate-50/50">
           {selectedReport ? (
             <div className="max-w-4xl mx-auto w-full space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/50">
+                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-3 py-1 rounded-full border border-emerald-300">
                   Report ID: {selectedReport.id.slice(0, 8)}
                 </span>
                 <DownloadButton reportId={selectedReport.id} />
@@ -128,13 +148,13 @@ export default function ReportsPage() {
                   reportId={selectedReport.id}
                 />
               ) : (
-                <div className="rounded-2xl border border-gray-200 p-8 text-center text-xs text-gray-500">
+                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-600">
                   Detailed report structure not available.
                 </div>
               )}
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center text-center text-xs text-gray-400">
+            <div className="flex h-full items-center justify-center text-center text-xs text-slate-500">
               Select a report from the left panel to inspect findings & export.
             </div>
           )}

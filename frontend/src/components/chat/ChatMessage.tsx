@@ -98,26 +98,26 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   if (isUser) {
     return (
-      <div className="group flex gap-3 py-4 border-b border-gray-100/70 px-4 sm:px-6 justify-end">
+      <div className="group flex gap-3 py-3 px-4 sm:px-6 justify-end">
         <div className="flex flex-col items-end space-y-1.5 max-w-2xl w-full sm:w-auto">
           {isEditing ? (
             /* Inline Edit Box */
-            <div className="w-full sm:w-[480px] rounded-2xl border border-emerald-500 bg-white p-3 shadow-md">
+            <div className="w-full sm:w-[480px] rounded-2xl border-2 border-emerald-500 bg-white p-3 shadow-md">
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={3}
-                className="w-full resize-none bg-transparent text-sm text-gray-900 focus:outline-none"
+                className="w-full resize-none bg-transparent text-sm text-slate-900 focus:outline-none font-normal"
                 autoFocus
               />
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 mt-2">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 mt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setIsEditing(false);
                     setEditContent(message.content);
                   }}
-                  className="rounded-lg px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="rounded-lg px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
                 >
                   Cancel
                 </button>
@@ -132,8 +132,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
               </div>
             </div>
           ) : (
-            /* Standard User Message Bubble */
-            <div className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm text-gray-900 leading-relaxed font-medium">
+            /* High-Contrast User Message Bubble */
+            <div className="rounded-2xl bg-slate-900 text-white px-4 py-2.5 text-sm leading-relaxed font-medium shadow-xs">
               {message.content}
             </div>
           )}
@@ -144,7 +144,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
               <button
                 type="button"
                 onClick={handleCopy}
-                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                className="rounded-md p-1 text-slate-400 hover:bg-slate-200/80 hover:text-slate-800 transition-colors"
                 title="Copy message"
               >
                 {copied ? (
@@ -157,7 +157,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                className="rounded-md p-1 text-slate-400 hover:bg-slate-200/80 hover:text-slate-800 transition-colors"
                 title="Edit message"
               >
                 <Pencil className="h-3.5 w-3.5" />
@@ -166,7 +166,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
         </div>
 
-        <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-slate-200 text-slate-700 text-xs font-semibold">
+        <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-slate-800 text-white text-xs font-semibold shadow-xs">
           <User className="h-4 w-4" />
         </div>
       </div>
@@ -174,7 +174,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   }
 
   return (
-    <div className="group flex gap-4 py-6 border-b border-gray-100 bg-white px-4 sm:px-6">
+    <div className="group flex gap-4 py-6 border border-slate-200/90 rounded-2xl bg-white px-5 sm:px-7 my-3 shadow-xs">
       <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
         <Sparkles className="h-4 w-4" />
       </div>
@@ -182,10 +182,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
       <div className="flex-1 space-y-3.5 max-w-4xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-900">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
               ResearchAI
             </span>
-            <span className="text-[11px] text-gray-400 font-medium">
+            <span className="text-[11px] text-slate-500 font-semibold">
               Verified Scientific Intelligence Report
             </span>
           </div>
@@ -195,7 +195,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <button
               type="button"
               onClick={handleCopy}
-              className="p-1.5 rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50 shadow-2xs transition-colors"
               title="Copy response"
             >
               {copied ? (
@@ -209,10 +209,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
             <button
               onClick={handleBookmark}
-              className={`p-1.5 rounded-lg border text-xs transition-colors ${
+              className={`p-1.5 rounded-lg border text-xs transition-colors shadow-2xs ${
                 isBookmarked
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-white text-gray-400 border-gray-200 hover:text-gray-700"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                  : "bg-white text-slate-500 border-slate-200 hover:text-slate-800"
               }`}
               title="Bookmark synthesis"
             >
@@ -224,8 +224,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {/* Render ChatGPT-Style Stopped State if Research was Paused */}
         {message.metadata_?.stopped || message.content === "_Research paused by user._" ? (
           <div className="space-y-3 pt-1">
-            <div className="inline-flex items-center gap-2 rounded-lg bg-gray-100/90 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200/60">
-              <span className="h-2 w-2 rounded-xs bg-gray-500" />
+            <div className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-300">
+              <span className="h-2 w-2 rounded-xs bg-slate-600" />
               <span>Research paused (generation stopped by user)</span>
             </div>
           </div>
@@ -234,20 +234,20 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <ReportPreview content={fetchedReport} reportId={reportId} />
           </div>
         ) : loadingReport ? (
-          <div className="flex items-center gap-2 py-4 text-xs text-gray-500">
+          <div className="flex items-center gap-2 py-4 text-xs text-slate-600 font-medium">
             <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
             <span>Loading full detailed enterprise report...</span>
           </div>
         ) : (
           /* Rich Markdown & Interactive Suggestion Cards */
-          <div className="text-gray-800 leading-relaxed text-sm">
+          <div className="text-slate-800 leading-relaxed text-sm">
             <ReactMarkdown
               components={{
                 strong: ({ node, ...props }) => (
-                  <span className="font-semibold text-gray-900" {...props} />
+                  <span className="font-bold text-slate-900" {...props} />
                 ),
                 p: ({ node, ...props }) => (
-                  <p className="mb-3 last:mb-0 text-sm leading-relaxed text-gray-700" {...props} />
+                  <p className="mb-3 last:mb-0 text-sm leading-relaxed text-slate-800" {...props} />
                 ),
                 ul: ({ node, ...props }) => (
                   <ul className="space-y-2 my-3 list-none pl-0" {...props} />
@@ -267,14 +267,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
                           sendMessage(message.chat_id, rawString);
                         }
                       }}
-                      className="group/pill flex items-center justify-between gap-3 rounded-xl border border-emerald-200/70 bg-gradient-to-r from-emerald-50/80 to-teal-50/40 hover:from-emerald-100/90 hover:to-teal-100/70 hover:border-emerald-400/80 px-4 py-2.5 text-xs font-medium text-emerald-950 cursor-pointer shadow-xs transition-all active:scale-[0.99]"
+                      className="group/pill flex items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/90 hover:border-emerald-400 px-4 py-2.5 text-xs font-semibold text-emerald-950 cursor-pointer shadow-xs transition-all active:scale-[0.99]"
                       title={`Click to research: "${rawString}"`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        <span className="font-medium text-emerald-900">{children}</span>
+                        <Sparkles className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                        <span className="font-semibold text-emerald-950">{children}</span>
                       </div>
-                      <ArrowUpRight className="h-4 w-4 text-emerald-600 opacity-60 group-hover/pill:opacity-100 group-hover/pill:translate-x-0.5 group-hover/pill:-translate-y-0.5 transition-all shrink-0" />
+                      <ArrowUpRight className="h-4 w-4 text-emerald-700 opacity-70 group-hover/pill:opacity-100 group-hover/pill:translate-x-0.5 group-hover/pill:-translate-y-0.5 transition-all shrink-0" />
                     </li>
                   );
                 },
@@ -285,12 +285,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
           </div>
         )}
 
-        {/* Citations & Evidence Drawer (if not using ReportPreview or as backup) */}
+        {/* Citations & Evidence Drawer */}
         {!fetchedReport && (sources.length > 0 || citations.length > 0) && (
-          <div className="pt-2 border-t border-gray-100">
+          <div className="pt-2 border-t border-slate-200">
             <button
               onClick={() => setShowCitations(!showCitations)}
-              className="flex items-center gap-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200/50 transition-colors"
+              className="flex items-center gap-2 text-xs font-semibold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100/80 px-3.5 py-1.5 rounded-lg border border-emerald-300 transition-colors shadow-2xs"
             >
               <span>
                 {showCitations

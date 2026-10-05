@@ -99,6 +99,9 @@ export interface Message {
     sources?: SourceResult[];
     citations?: CitationItem[];
     report_id?: string;
+    report?: ReportContent;
+    stopped?: boolean;
+    [key: string]: unknown;
   };
   report_id?: string;
   created_at: string;
@@ -135,6 +138,9 @@ export interface AgentStreamEvent {
     domain?: string;
     active_agents?: string[];
   };
+  chat_id?: string;
+  chat_title?: string;
+  content?: string;
   report?: ReportContent;
   report_id?: string;
   sources?: SourceResult[];

@@ -159,20 +159,25 @@ async def task_manager_node(state: AgentState) -> AgentState:
     if not plan:
         return state
 
-    # Build search tasks — one per sub-query × agent combination
+    # Build search tasks — run each agent against ALL sub-queries for maximum coverage
     tasks = []
     agents_to_run = state["active_agents"]
+    # Use all sub-queries (up to 5); fall back to the main query
+    search_queries = plan.sub_queries[:5] if plan.sub_queries else [plan.query]
+    # Always include the original query as an anchor
+    if plan.query not in search_queries:
+        search_queries = [plan.query] + search_queries[:4]
 
     for agent_name in agents_to_run:
         agent_cls = AGENT_MAP.get(agent_name)
         if not agent_cls:
             continue
         agent = agent_cls()
-        # Use the primary query (agent-specific searches use their own optimizations)
-        primary_query = plan.sub_queries[0] if plan.sub_queries else plan.query
-        tasks.append(agent.search(primary_query))
+        # Primary search on main query; also fan out to sub-queries
+        for sq in search_queries:
+            tasks.append(agent.search(sq))
 
-    logger.info("Dispatching agents", count=len(tasks), agents=agents_to_run)
+    logger.info("Dispatching agents", count=len(tasks), agents=agents_to_run, sub_queries=len(search_queries))
 
     all_results = await asyncio.gather(*tasks, return_exceptions=True)
 

@@ -26,11 +26,11 @@ RETRY_EXCEPTIONS = (
 )
 
 
-def create_retry_decorator(max_attempts: int = 3):
+def create_retry_decorator(max_attempts: int = 2):
     return retry(
         retry=retry_if_exception_type(RETRY_EXCEPTIONS),
         stop=stop_after_attempt(max_attempts),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
+        wait=wait_exponential(multiplier=1, min=1, max=4),
         reraise=True,
     )
 
@@ -39,7 +39,7 @@ class BaseAPIClient(ABC):
     """Abstract base for all external API integrations."""
 
     BASE_URL: str = ""
-    TIMEOUT: int = 30
+    TIMEOUT: int = 8
 
     def __init__(self):
         self._session: Optional[aiohttp.ClientSession] = None

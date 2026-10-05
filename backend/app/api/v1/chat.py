@@ -204,7 +204,7 @@ async def send_message(
 
     service = ChatService(db)
     if chat_id == "new":
-        chat = await service.create_chat(current_user.id, title=data.content[:60])
+        chat = await service.create_chat(current_user.id, title=data.content[:80].strip())
         real_chat_id = chat.id
     else:
         try:
@@ -215,6 +215,9 @@ async def send_message(
         if not chat:
             raise HTTPException(status_code=404, detail="Chat not found")
         real_chat_id = parsed_id
+        # Auto-rename if the chat still has a generic placeholder title
+        if chat.title.strip() in ("New Chat", "New Research Chat", ""):
+            chat.title = data.content[:80].strip()
 
     # Save user message
     user_message = await service.add_message(
@@ -257,7 +260,7 @@ async def send_message(
                         )
                         await service.update_task_status(task.id, TaskStatus.COMPLETED)
                         await db.commit()
-                        yield f"data: {json.dumps({'type': 'complete', 'chat_id': str(real_chat_id), 'content': assistant_content, 'report': None, 'sources': []})}\n\n"
+                        yield f"data: {json.dumps({'type': 'complete', 'chat_id': str(real_chat_id), 'chat_title': chat.title, 'content': assistant_content, 'report': None, 'sources': []})}\n\n"
                         continue
 
                     final_report = event.get("report")
@@ -317,11 +320,11 @@ async def send_message(
                         await service.update_task_status(task.id, TaskStatus.COMPLETED, plan=None)
                         await db.commit()
 
-                        yield f"data: {json.dumps({'type': 'complete', 'chat_id': str(real_chat_id), 'report': final_report, 'report_id': str(db_report.id), 'sources': all_sources[:10], 'citations': all_citations})}\n\n"
+                        yield f"data: {json.dumps({'type': 'complete', 'chat_id': str(real_chat_id), 'chat_title': chat.title, 'report': final_report, 'report_id': str(db_report.id), 'sources': all_sources[:10], 'citations': all_citations})}\n\n"
                     else:
                         await service.update_task_status(task.id, TaskStatus.COMPLETED)
                         await db.commit()
-                        yield f"data: {json.dumps({'type': 'complete', 'chat_id': str(real_chat_id), 'report': None})}\n\n"
+                        yield f"data: {json.dumps({'type': 'complete', 'chat_id': str(real_chat_id), 'chat_title': chat.title, 'report': None})}\n\n"
 
         except Exception as e:
             logger.error("Stream error", error=str(e), chat_id=str(real_chat_id))

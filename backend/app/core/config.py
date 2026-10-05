@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = None
     LLM_MODEL: str = "gemini-3.5-flash"
     LLM_TEMPERATURE: float = 0.2
-    LLM_MAX_TOKENS: int = 8192
+    LLM_MAX_TOKENS: int = 16384
 
     # ─── Search APIs ──────────────────────────────────────────────────
     BRAVE_SEARCH_API_KEY: Optional[str] = None

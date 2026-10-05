@@ -40,7 +40,7 @@ JSON_HEADERS = {
 }
 
 
-async def _fetch_html(url: str, params: Optional[Dict] = None, timeout: int = 15) -> str:
+async def _fetch_html(url: str, params: Optional[Dict] = None, timeout: int = 6) -> str:
     try:
         async with aiohttp.ClientSession(headers=HEADERS) as session:
             async with session.get(
@@ -52,7 +52,7 @@ async def _fetch_html(url: str, params: Optional[Dict] = None, timeout: int = 15
         return ""
 
 
-async def _fetch_json(url: str, params: Optional[Dict] = None, headers: Optional[Dict] = None, timeout: int = 15) -> Any:
+async def _fetch_json(url: str, params: Optional[Dict] = None, headers: Optional[Dict] = None, timeout: int = 6) -> Any:
     try:
         async with aiohttp.ClientSession(headers=headers or JSON_HEADERS) as session:
             async with session.get(
@@ -178,31 +178,42 @@ SEARXNG_INSTANCES = [
 ]
 
 
+async def _try_searxng_instance(instance: str, query: str, max_results: int) -> List[Dict]:
+    """Try a single SearXNG instance — returns empty list on failure."""
+    data = await _fetch_json(
+        f"{instance}/search",
+        params={
+            "q": query,
+            "format": "json",
+            "language": "en",
+            "categories": "general",
+            "safesearch": 1,
+        },
+        timeout=6,
+    )
+    if data and data.get("results"):
+        return [
+            _build_result(
+                title=r.get("title", ""),
+                url=r.get("url", ""),
+                snippet=r.get("content", ""),
+                publisher=r.get("engine", ""),
+                date=r.get("publishedDate", ""),
+            )
+            for r in data["results"][:max_results]
+        ]
+    return []
+
+
 async def searxng_search(query: str, max_results: int = 10) -> List[Dict]:
-    """SearXNG public instance meta-search — aggregates Bing, Google, etc."""
-    for instance in SEARXNG_INSTANCES:
-        data = await _fetch_json(
-            f"{instance}/search",
-            params={
-                "q": query,
-                "format": "json",
-                "language": "en",
-                "categories": "general",
-                "safesearch": 1,
-            },
-            timeout=12,
-        )
-        if data and data.get("results"):
-            results = []
-            for r in data["results"][:max_results]:
-                results.append(_build_result(
-                    title=r.get("title", ""),
-                    url=r.get("url", ""),
-                    snippet=r.get("content", ""),
-                    publisher=r.get("engine", ""),
-                    date=r.get("publishedDate", ""),
-                ))
-            return results
+    """SearXNG public instance meta-search — tries all instances in parallel, returns first success."""
+    results_list = await asyncio.gather(
+        *[_try_searxng_instance(inst, query, max_results) for inst in SEARXNG_INSTANCES],
+        return_exceptions=True,
+    )
+    for r in results_list:
+        if isinstance(r, list) and r:
+            return r
     return []
 
 

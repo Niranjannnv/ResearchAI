@@ -156,7 +156,7 @@ class ReportGenerator:
     def _generate_markdown(
         self, content: Dict, title: str, query: str, citation_style: str
     ) -> str:
-        references = content.get("references", [])
+        references = _filter_references(content.get("references", []))
         src_count = content.get("source_count", len(references))
 
         md = f"# {title}\n\n"
@@ -241,7 +241,7 @@ class ReportGenerator:
     def _generate_html(
         self, content: Dict, title: str, query: str, citation_style: str
     ) -> str:
-        references = content.get("references", [])
+        references = _filter_references(content.get("references", []))
         src_count = content.get("source_count", len(references))
 
         findings_html = ""
@@ -482,7 +482,7 @@ class ReportGenerator:
         story.append(HRFlowable(width="100%", thickness=1.5, color=c_secondary, spaceBefore=2, spaceAfter=6))
 
         # 2. Metadata Card (Compact table that fits easily on page 1)
-        references = content.get("references", [])
+        references = _filter_references(content.get("references", []))
         src_count = content.get("source_count", len(references))
         meta_left = f"<b>Research Inquiry:</b> {query}"
         meta_right = f"<b>Date:</b> {datetime.now().strftime('%B %d, %Y')} | <b>Sources Synthesized:</b> {src_count} records"
@@ -611,6 +611,7 @@ class ReportGenerator:
             story.append(Paragraph("References & Scholarly Bibliography", h1_style))
             for i, ref in enumerate(references, 1):
                 citation = ref.get(f"citation_{citation_style}") or ref.get("apa") or ref.get("title", "")
+                citation = _strip_urls_from_citation(citation)
                 story.append(Paragraph(f"[{i}] {citation}", bullet_style))
 
         # Build using NumberedCanvas
@@ -679,7 +680,7 @@ class ReportGenerator:
                         doc.add_paragraph(f"• {t}", style="List Bullet")
 
         # References
-        references = content.get("references", [])
+        references = _filter_references(content.get("references", []))
         if references:
             doc.add_heading("References", level=1)
             for i, ref in enumerate(references, 1):
@@ -687,6 +688,63 @@ class ReportGenerator:
                 doc.add_paragraph(f"[{i}] {citation}", style="List Number")
 
         doc.save(output_path)
+
+
+# ---------------------------------------------------------------------------
+# Module-level helpers
+# ---------------------------------------------------------------------------
+
+_JUNK_DOMAINS = (
+    "bing.com",
+    "youtube.com",
+    "youtu.be",
+    "google.com/search",
+    "yahoo.com/search",
+    "duckduckgo.com",
+)
+
+
+def _is_junk_reference(ref: dict) -> bool:
+    """Return True if the reference is a low-quality / non-scholarly source."""
+    import re
+
+    url = ref.get("url", "") or ""
+    title = ref.get("title", "") or ""
+    citation = (
+        ref.get("citation_apa")
+        or ref.get("apa")
+        or ref.get("citation_mla")
+        or ref.get("citation_chicago")
+        or ""
+    )
+    combined = " ".join([url, title, citation]).lower()
+
+    # Reject entries whose URL or citation text points to a search-engine / video platform
+    if any(domain in combined for domain in _JUNK_DOMAINS):
+        return True
+
+    # Reject entries whose title looks like a raw URL (no meaningful author/title)
+    if re.match(r'^https?://', title.strip()):
+        return True
+
+    # Reject entries with no meaningful title or citation text
+    if not title.strip() and not citation.strip():
+        return True
+
+    return False
+
+
+def _filter_references(references: list) -> list:
+    """Remove junk/search-engine references from the list."""
+    return [ref for ref in references if not _is_junk_reference(ref)]
+
+
+def _strip_urls_from_citation(citation: str) -> str:
+    """Remove raw HTTP/HTTPS URLs from a citation string for cleaner PDF output."""
+    import re
+    # Remove standalone URLs (optionally preceded by whitespace)
+    cleaned = re.sub(r'\s*https?://\S+', '', citation)
+    return cleaned.strip()
 
 
 report_generator = ReportGenerator()

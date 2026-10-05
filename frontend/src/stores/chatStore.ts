@@ -8,6 +8,7 @@ interface ChatState {
   messages: Message[];
   isLoadingChats: boolean;
   isStreaming: boolean;
+  streamingChatId: string | null;
   streamStatus: string | null;
   activeAgents: string[];
   liveSources: SourceResult[];
@@ -30,6 +31,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   isLoadingChats: false,
   isStreaming: false,
+  streamingChatId: null,
   streamStatus: null,
   activeAgents: [],
   liveSources: [],
@@ -38,21 +40,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
   abortController: null,
 
   stopStreaming: () => {
-    const { abortController, currentChat } = get();
+    const { abortController, streamingChatId, currentChat } = get();
     if (abortController) {
       abortController.abort();
     }
+    const stoppedChatId = streamingChatId || currentChat?.id || "new";
     const stoppedMsg: Message = {
       id: "stopped-" + Date.now(),
-      chat_id: currentChat?.id || "new",
+      chat_id: stoppedChatId,
       role: "assistant",
       content: "_Research paused by user._",
       metadata_: { stopped: true },
       created_at: new Date().toISOString(),
     };
     set((state) => ({
-      messages: [...state.messages, stoppedMsg],
+      messages: state.currentChat?.id === stoppedChatId
+        ? [...state.messages, stoppedMsg]
+        : state.messages,
       isStreaming: false,
+      streamingChatId: null,
       streamStatus: null,
       abortController: null,
     }));
@@ -70,20 +76,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   createChat: async (title = "New Research Chat") => {
     const { data } = await api.post("/chats", { title });
-    set((state) => ({ chats: [data, ...state.chats], currentChat: data, messages: [] }));
+    set((state) => ({
+      chats: [data, ...state.chats],
+      currentChat: data,
+      messages: [],
+      ...(state.streamingChatId === data.id ? {} : {
+        streamStatus: null,
+        liveSources: [],
+        liveCitations: [],
+        liveReport: null,
+      }),
+    }));
     return data.id;
   },
 
   selectChat: async (chatId: string) => {
     try {
+      const isThisChatStreaming = get().streamingChatId === chatId;
       const { data } = await api.get(`/chats/${chatId}`);
       set({
         currentChat: data,
         messages: data.messages || [],
-        streamStatus: null,
-        liveSources: [],
-        liveCitations: [],
-        liveReport: null,
+        ...(isThisChatStreaming ? {} : {
+          streamStatus: null,
+          liveSources: [],
+          liveCitations: [],
+          liveReport: null,
+        }),
       });
     } catch (e) {
       console.error("Failed to fetch chat detail", e);
@@ -96,6 +115,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       chats: state.chats.filter((c) => c.id !== chatId),
       currentChat: state.currentChat?.id === chatId ? null : state.currentChat,
       messages: state.currentChat?.id === chatId ? [] : state.messages,
+      streamingChatId: state.streamingChatId === chatId ? null : state.streamingChatId,
+      isStreaming: state.streamingChatId === chatId ? false : state.isStreaming,
     }));
   },
 
@@ -111,7 +132,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     let targetChatId = chatId;
     if (targetChatId === "new" || !targetChatId) {
       try {
-        targetChatId = await get().createChat(content.slice(0, 50) + "...");
+        targetChatId = await get().createChat(content.slice(0, 80).trim());
         if (typeof window !== "undefined") {
           window.history.replaceState(null, "", `/chat/${targetChatId}`);
         }
@@ -131,8 +152,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const controller = new AbortController();
 
     set((state) => ({
-      messages: [...state.messages, userMsg],
+      messages: state.currentChat?.id === targetChatId || targetChatId === "new"
+        ? [...state.messages, userMsg]
+        : state.messages,
       isStreaming: true,
+      streamingChatId: targetChatId,
       streamStatus: "Understanding research inquiry",
       activeAgents: [],
       liveSources: [],
@@ -173,9 +197,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
           if (line.startsWith("data: ")) {
             const jsonStr = line.replace("data: ", "").trim();
             if (jsonStr === "[DONE]") {
-              set({ isStreaming: false, streamStatus: null, abortController: null });
-              // Refresh chat to get persistent IDs & metadata
-              if (targetChatId !== "new") {
+              const isViewing = get().currentChat?.id === targetChatId;
+              set({ isStreaming: false, streamingChatId: null, streamStatus: null, abortController: null });
+              // Refresh chat to get persistent IDs & metadata if user is on this chat
+              if (isViewing && targetChatId !== "new") {
                 get().selectChat(targetChatId);
               }
               get().fetchChats();
@@ -185,40 +210,72 @@ export const useChatStore = create<ChatState>((set, get) => ({
             try {
               const event: AgentStreamEvent = JSON.parse(jsonStr);
               if (event.type === "status") {
-                set({
-                  streamStatus: event.message || "Synthesizing research...",
-                  activeAgents: event.data?.active_agents || get().activeAgents,
-                });
+                if (get().streamingChatId === targetChatId) {
+                  set({
+                    streamStatus: event.message || "Synthesizing research...",
+                    activeAgents: event.data?.active_agents || get().activeAgents,
+                  });
+                }
               } else if (event.type === "complete") {
                 if (event.chat_id && event.chat_id !== targetChatId) {
                   targetChatId = event.chat_id;
-                  if (typeof window !== "undefined") {
+                  if (get().streamingChatId !== null) {
+                    set({ streamingChatId: targetChatId });
+                  }
+                  if (typeof window !== "undefined" && window.location.pathname.includes("/chat/new")) {
                     window.history.replaceState(null, "", `/chat/${targetChatId}`);
                   }
                 }
-                if (event.content && !event.report) {
-                  const assistantMsg: Message = {
-                    id: "msg-" + Date.now(),
-                    chat_id: targetChatId,
-                    role: "assistant",
-                    content: event.content,
-                    created_at: new Date().toISOString(),
-                  };
+
+                // Update chat title in sidebar if backend renamed it
+                const newChatTitle = event.chat_title?.trim();
+                if (newChatTitle) {
                   set((s) => ({
-                    messages: [...s.messages, assistantMsg],
-                    liveReport: null,
-                    liveSources: [],
-                    liveCitations: [],
-                    isStreaming: false,
-                    streamStatus: null,
-                    abortController: null,
+                    chats: s.chats.map((c) =>
+                      c.id === targetChatId ? { ...c, title: newChatTitle } : c
+                    ),
+                    currentChat:
+                      s.currentChat?.id === targetChatId
+                        ? { ...s.currentChat, title: newChatTitle }
+                        : s.currentChat,
                   }));
+                }
+
+                const isViewing = get().currentChat?.id === targetChatId;
+                if (isViewing) {
+                  if (event.content && !event.report) {
+                    const assistantMsg: Message = {
+                      id: "msg-" + Date.now(),
+                      chat_id: targetChatId,
+                      role: "assistant",
+                      content: event.content,
+                      created_at: new Date().toISOString(),
+                    };
+                    set((s) => ({
+                      messages: [...s.messages, assistantMsg],
+                      liveReport: null,
+                      liveSources: [],
+                      liveCitations: [],
+                      isStreaming: false,
+                      streamingChatId: null,
+                      streamStatus: null,
+                      abortController: null,
+                    }));
+                  } else {
+                    set({
+                      liveReport: event.report || null,
+                      liveSources: event.sources || [],
+                      liveCitations: event.citations || [],
+                      isStreaming: false,
+                      streamingChatId: null,
+                      streamStatus: null,
+                      abortController: null,
+                    });
+                  }
                 } else {
                   set({
-                    liveReport: event.report || null,
-                    liveSources: event.sources || [],
-                    liveCitations: event.citations || [],
                     isStreaming: false,
+                    streamingChatId: null,
                     streamStatus: null,
                     abortController: null,
                   });
@@ -232,12 +289,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     } catch (e: any) {
       if (e.name === "AbortError") {
-        set({ isStreaming: false, streamStatus: null, abortController: null });
+        set({ isStreaming: false, streamingChatId: null, streamStatus: null, abortController: null });
         return;
       }
       console.error("Stream failed", e);
       set({
         isStreaming: false,
+        streamingChatId: null,
         streamStatus: "Research encountered an issue. Please try again.",
         abortController: null,
       });

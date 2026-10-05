@@ -17,10 +17,11 @@ interface AttachedDoc {
 interface ChatInputProps {
   onSendMessage: (content: string) => void;
   disabled?: boolean;
+  isStreaming?: boolean;
 }
 
-export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
-  const { isStreaming, stopStreaming } = useChatStore();
+export function ChatInput({ onSendMessage, disabled, isStreaming = false }: ChatInputProps) {
+  const { stopStreaming } = useChatStore();
   const [content, setContent] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -212,20 +213,20 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
 
       <form
         onSubmit={handleSubmit}
-        className={`relative rounded-2xl border bg-white px-3.5 py-2 shadow-subtle transition-all focus-within:shadow-float ${
+        className={`relative rounded-2xl border bg-white px-4 py-2.5 shadow-sm transition-all focus-within:shadow-md ${
           isListening
             ? "border-emerald-500 ring-2 ring-emerald-500/20"
-            : "border-gray-200/90 focus-within:border-gray-300"
+            : "border-slate-300 focus-within:border-emerald-600 focus-within:ring-2 focus-within:ring-emerald-500/15"
         }`}
       >
         {/* Attached Document Pill Card */}
         {attachedDoc && (
-          <div className="mb-2.5 flex items-center justify-between rounded-xl bg-emerald-50/80 border border-emerald-200/70 px-3 py-2 text-xs text-emerald-900">
+          <div className="mb-2.5 flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-300/80 px-3 py-2 text-xs text-emerald-950 font-medium">
             <div className="flex items-center gap-2 overflow-hidden">
               <FileText className="h-4 w-4 shrink-0 text-emerald-700" />
               <div className="truncate">
                 <span className="font-semibold">{attachedDoc.filename}</span>
-                <span className="ml-2 text-[11px] text-emerald-600">
+                <span className="ml-2 text-[11px] text-emerald-700 font-normal">
                   ({attachedDoc.page_count > 1 ? `${attachedDoc.page_count} pages, ` : ""}
                   {attachedDoc.word_count.toLocaleString()} words)
                 </span>
@@ -244,7 +245,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
 
         {/* Uploading indicator */}
         {isUploading && (
-          <div className="mb-2.5 flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-700">
+          <div className="mb-2.5 flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-xs text-slate-800 font-medium">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600" />
             <span>Parsing document text and extracting structure...</span>
           </div>
@@ -262,7 +263,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
 
         {/* Voice Listening Active Banner */}
         {isListening && (
-          <div className="mb-2 flex items-center gap-2 text-xs text-emerald-700 font-medium animate-pulse">
+          <div className="mb-2 flex items-center gap-2 text-xs text-emerald-800 font-semibold animate-pulse">
             <span className="h-2 w-2 rounded-full bg-emerald-600 animate-ping" />
             <span>Listening... Speak your research inquiry clearly</span>
           </div>
@@ -282,11 +283,11 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
           }
           disabled={disabled}
           rows={1}
-          className="w-full resize-none bg-transparent px-1 py-0.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:opacity-50 min-h-[24px] leading-relaxed"
+          className="w-full resize-none bg-transparent px-1 py-0.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:opacity-50 min-h-[26px] leading-relaxed font-normal"
         />
 
-        <div className="flex items-center justify-between pt-1 mt-1 border-t border-gray-100/80">
-          <div className="flex items-center gap-0.5 text-gray-400">
+        <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-slate-100">
+          <div className="flex items-center gap-1 text-slate-500">
             {/* Attachment Button */}
             <button
               type="button"
@@ -295,14 +296,14 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
               className={`p-1.5 rounded-lg transition-colors ${
                 attachedDoc
                   ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                  : "hover:bg-gray-100 hover:text-gray-700"
+                  : "hover:bg-slate-100 hover:text-slate-800"
               }`}
               title="Upload reference files (.pdf, .docx, .txt, .md, .csv)"
             >
-              <Paperclip className="h-3.5 w-3.5" />
+              <Paperclip className="h-4 w-4" />
             </button>
 
-            {/* Voice Input Microphone Button — en-IN recognizes English + Indian names */}
+            {/* Voice Input Microphone Button */}
             <button
               type="button"
               onClick={toggleVoiceInput}
@@ -310,14 +311,14 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
               className={`p-1.5 rounded-lg transition-all ${
                 isListening
                   ? "bg-red-50 text-red-600 ring-2 ring-red-400/50 scale-105"
-                  : "hover:bg-gray-100 hover:text-gray-700"
+                  : "hover:bg-slate-100 hover:text-slate-800"
               }`}
               title={isListening ? "Stop listening" : "Voice input (recognizes names & places)"}
             >
               {isListening ? (
-                <MicOff className="h-3.5 w-3.5 animate-pulse" />
+                <MicOff className="h-4 w-4 animate-pulse" />
               ) : (
-                <Mic className="h-3.5 w-3.5" />
+                <Mic className="h-4 w-4" />
               )}
             </button>
           </div>
@@ -343,7 +344,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
         </div>
       </form>
 
-      <div className="text-center pt-1.5 text-[11px] text-gray-400">
+      <div className="text-center pt-2 text-[11px] text-slate-500 font-medium">
         ResearchAI searches OpenAlex, PubMed, arXiv, Semantic Scholar, CORE, Europe PMC, and Books.
       </div>
     </div>
