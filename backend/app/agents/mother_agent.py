@@ -57,7 +57,15 @@ def _clean_json_str(content: Any) -> str:
     """Extract text and strip markdown code blocks or surrounding text from LLM JSON response."""
     import re
     if isinstance(content, list):
-        text = "".join(b.get("text", "") if isinstance(b, dict) else str(b) for b in content)
+        parts = []
+        for b in content:
+            if isinstance(b, dict):
+                parts.append(b.get("text", ""))
+            elif hasattr(b, "text"):
+                parts.append(b.text)
+            else:
+                parts.append(str(b))
+        text = "".join(parts)
     else:
         text = str(content)
     text = text.strip()
