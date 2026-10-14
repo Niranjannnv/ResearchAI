@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
-import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+
 
 function LoginForm() {
   const router = useRouter();
@@ -82,8 +82,6 @@ function LoginForm() {
           <p className="text-sm text-red-600">{error}</p>
         )}
 
-        {/* Google */}
-        <GoogleAuthButton mode="signin" />
 
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-4">

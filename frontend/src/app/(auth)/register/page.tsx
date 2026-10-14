@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
-import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -73,8 +73,6 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {/* Google One-Click Sign-Up */}
-        <GoogleAuthButton mode="signup" />
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div className="space-y-1.5">
@@ -182,7 +180,7 @@ export default function RegisterPage() {
         {/* Security Assurance Badge */}
         <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 flex items-center gap-2.5 text-[11px] text-slate-600">
           <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-          <span>Zero-Knowledge Password Hashing & Verified OAuth 2.0 Integration</span>
+          <span>Zero-Knowledge Password Hashing & End-to-End Encrypted Sessions</span>
         </div>
 
         <div className="text-center pt-1 border-t border-gray-100">
