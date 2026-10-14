@@ -55,8 +55,8 @@ class Settings(BaseSettings):
     # ─── Google OAuth ─────────────────────────────────────────────────
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
-    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
-    FRONTEND_URL: str = "http://localhost:3001"
+    GOOGLE_REDIRECT_URI: str = "https://researchai-api-v67a.onrender.com/api/v1/auth/google/callback"
+    FRONTEND_URL: str = "https://research-ai-pink.vercel.app"
 
     # ─── SMTP Email ───────────────────────────────────────────────────
     SMTP_HOST: Optional[str] = None
