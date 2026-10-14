@@ -1,8 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/authStore";
+import React, { useState } from "react";
 import { api } from "@/lib/api";
 
 interface GoogleAuthButtonProps {
@@ -10,35 +8,21 @@ interface GoogleAuthButtonProps {
 }
 
 export function GoogleAuthButton({ mode = "signin" }: GoogleAuthButtonProps) {
-  const router = useRouter();
-  const { setAuth, fetchMe } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const [available, setAvailable] = useState<boolean | null>(null); // null = checking
-
-  // Check if Google OAuth is configured on the backend
-  useEffect(() => {
-    api
-      .get("/auth/google/login")
-      .then((res) => {
-        setAvailable(!!(res.data?.auth_url && res.data?.client_id));
-      })
-      .catch(() => {
-        setAvailable(false); // Not configured — hide button silently
-      });
-  }, []);
-
-  // While checking or not configured — render nothing
-  if (available === null || available === false) return null;
+  const [error, setError] = useState<string | null>(null);
 
   const handleGoogleClick = async () => {
     setLoading(true);
+    setError(null);
     try {
       const { data } = await api.get("/auth/google/login");
       if (data?.auth_url) {
         window.location.href = data.auth_url;
+      } else {
+        setError("Google sign-in is not configured.");
       }
     } catch {
-      // silently ignore
+      setError("Could not connect to server. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -68,7 +52,11 @@ export function GoogleAuthButton({ mode = "signin" }: GoogleAuthButtonProps) {
         </span>
       </button>
 
-      {/* Divider only shown when Google button is visible */}
+      {error && (
+        <p className="text-xs text-red-500 text-center">{error}</p>
+      )}
+
+      {/* Divider */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-gray-100" />
         <span className="text-xs text-gray-400">or</span>
