@@ -64,3 +64,31 @@
 .animate-pulse-subtle {
   animation: pulse-subtle 3s ease-in-out infinite;
 }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Safe area padding for mobile notches / home indicators */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0.75rem);
+}
+
+/* Mobile viewport height fix — fixes the "only seeing half" bug on mobile browsers.
+   Mobile browsers shrink/expand the viewport as the address bar hides/shows.
+   dvh (dynamic viewport height) accounts for this correctly. */
+html {
+  height: -webkit-fill-available; /* iOS Safari fallback */
+}
+
+body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+}
+

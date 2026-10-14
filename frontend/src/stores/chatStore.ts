@@ -21,7 +21,7 @@ interface ChatState {
   selectChat: (chatId: string) => Promise<void>;
   deleteChat: (chatId: string) => Promise<void>;
   renameChat: (chatId: string, title: string) => Promise<void>;
-  sendMessage: (chatId: string, content: string) => Promise<void>;
+  sendMessage: (chatId: string, content: string, displayContent?: string) => Promise<void>;
   stopStreaming: () => void;
 }
 
@@ -75,19 +75,36 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   createChat: async (title = "New Research Chat") => {
-    const { data } = await api.post("/chats", { title });
-    set((state) => ({
-      chats: [data, ...state.chats],
-      currentChat: data,
-      messages: [],
-      ...(state.streamingChatId === data.id ? {} : {
-        streamStatus: null,
-        liveSources: [],
-        liveCitations: [],
-        liveReport: null,
-      }),
-    }));
-    return data.id;
+    try {
+      const { data } = await api.post("/chats", { title });
+      set((state) => ({
+        chats: [data, ...state.chats],
+        currentChat: data,
+        messages: [],
+        ...(state.streamingChatId === data.id ? {} : {
+          streamStatus: null,
+          liveSources: [],
+          liveCitations: [],
+          liveReport: null,
+        }),
+      }));
+      return data.id;
+    } catch (err) {
+      console.error("Failed to create chat on server:", err);
+      const fallbackChat: Chat = {
+        id: `local-${Date.now()}`,
+        title,
+        is_archived: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      set((state) => ({
+        chats: [fallbackChat, ...state.chats],
+        currentChat: fallbackChat,
+        messages: [],
+      }));
+      return fallbackChat.id;
+    }
   },
 
   selectChat: async (chatId: string) => {
@@ -110,7 +127,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   deleteChat: async (chatId: string) => {
-    await api.delete(`/chats/${chatId}`);
     set((state) => ({
       chats: state.chats.filter((c) => c.id !== chatId),
       currentChat: state.currentChat?.id === chatId ? null : state.currentChat,
@@ -118,17 +134,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
       streamingChatId: state.streamingChatId === chatId ? null : state.streamingChatId,
       isStreaming: state.streamingChatId === chatId ? false : state.isStreaming,
     }));
+    try {
+      await api.delete(`/chats/${chatId}`);
+    } catch (err) {
+      console.error("Failed to delete chat on server:", err);
+    }
   },
 
   renameChat: async (chatId: string, title: string) => {
-    const { data } = await api.patch(`/chats/${chatId}`, { title });
+    // Optimistic update
     set((state) => ({
-      chats: state.chats.map((c) => (c.id === chatId ? { ...c, title: data.title } : c)),
-      currentChat: state.currentChat?.id === chatId ? { ...state.currentChat, title: data.title } : state.currentChat,
+      chats: state.chats.map((c) => (c.id === chatId ? { ...c, title } : c)),
+      currentChat: state.currentChat?.id === chatId ? { ...state.currentChat, title } : state.currentChat,
     }));
+    try {
+      const { data } = await api.patch(`/chats/${chatId}`, { title });
+      if (data?.title) {
+        set((state) => ({
+          chats: state.chats.map((c) => (c.id === chatId ? { ...c, title: data.title } : c)),
+          currentChat: state.currentChat?.id === chatId ? { ...state.currentChat, title: data.title } : state.currentChat,
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to rename chat on server:", err);
+    }
   },
 
-  sendMessage: async (chatId: string, content: string) => {
+  sendMessage: async (chatId: string, content: string, displayContent?: string) => {
     let targetChatId = chatId;
     if (targetChatId === "new" || !targetChatId) {
       try {
@@ -145,7 +177,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       id: "temp-" + Date.now(),
       chat_id: targetChatId,
       role: "user",
-      content,
+      // Show the clean display text in the bubble; fall back to content if no displayContent
+      content: displayContent || content,
       created_at: new Date().toISOString(),
     };
 

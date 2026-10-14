@@ -14,9 +14,11 @@ import {
   Trash2,
   Edit2,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useChatStore } from "@/stores/chatStore";
+import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -25,6 +27,7 @@ export function Sidebar() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { chats, fetchChats, createChat, deleteChat, renameChat, isStreaming, streamingChatId } = useChatStore();
+  const { isMobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -35,8 +38,19 @@ export function Sidebar() {
     fetchChats();
   }, [fetchChats]);
 
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [pathname, setMobileSidebarOpen]);
+
   const handleNewChat = async () => {
+    setMobileSidebarOpen(false);
     const id = await createChat();
+    router.push(`/chat/${id}`);
+  };
+
+  const handleSelectChat = (id: string) => {
+    setMobileSidebarOpen(false);
     router.push(`/chat/${id}`);
   };
 
@@ -93,11 +107,31 @@ export function Sidebar() {
         onCancel={handleCancelDelete}
       />
 
-      <aside className="flex h-screen w-72 flex-col border-r border-slate-200 bg-white text-slate-800 select-none shadow-2xs">
+      {/* Mobile Backdrop Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs md:hidden transition-opacity"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar: Fixed drawer on mobile, static on md+ */}
+      <aside
+        className={cn(
+          "flex h-[100dvh] flex-col border-r border-slate-200 bg-white text-slate-800 select-none shadow-2xs z-50",
+          "fixed inset-y-0 left-0 w-72 max-w-[85vw] transition-transform duration-200 ease-in-out md:static md:w-72 md:translate-x-0 md:shadow-none",
+          isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+      >
         {/* Brand Header & New Chat Button */}
-        <div className="p-4 space-y-3">
-          <div className="flex items-center justify-between px-2">
-            <Link href="/" className="flex items-center gap-2 font-bold text-slate-900 tracking-tight">
+        <div className="p-4 space-y-3 shrink-0">
+          <div className="flex items-center justify-between px-1">
+            <Link
+              href="/"
+              onClick={() => setMobileSidebarOpen(false)}
+              className="flex items-center gap-2 font-bold text-slate-900 tracking-tight"
+            >
               <div className="h-7 w-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-sm">
                 <Sparkles className="h-4 w-4" />
               </div>
@@ -105,9 +139,21 @@ export function Sidebar() {
                 ResearchAI
               </span>
             </Link>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              Enterprise
-            </span>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                Enterprise
+              </span>
+              {/* Mobile Close Button */}
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(false)}
+                className="md:hidden p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                aria-label="Close sidebar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <button
@@ -120,7 +166,7 @@ export function Sidebar() {
         </div>
 
         {/* Primary Navigation */}
-        <div className="px-3 py-1 space-y-0.5">
+        <div className="px-3 py-1 space-y-0.5 shrink-0">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -128,6 +174,7 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setMobileSidebarOpen(false)}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                   isActive
@@ -142,7 +189,7 @@ export function Sidebar() {
           })}
         </div>
 
-        <div className="mx-4 my-2 border-t border-slate-200" />
+        <div className="mx-4 my-2 border-t border-slate-200 shrink-0" />
 
         {/* Chat History List */}
         <div className="flex-1 overflow-y-auto px-3 py-1">
@@ -163,7 +210,7 @@ export function Sidebar() {
                 return (
                   <div
                     key={chat.id}
-                    onClick={() => router.push(`/chat/${chat.id}`)}
+                    onClick={() => handleSelectChat(chat.id)}
                     className={cn(
                       "group relative flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all cursor-pointer",
                       isActive
@@ -201,17 +248,17 @@ export function Sidebar() {
                     </div>
 
                     {!isEditing && (
-                      <div className="hidden group-hover:flex items-center gap-1 shrink-0">
+                      <div className="flex md:hidden md:group-hover:flex items-center gap-1 shrink-0">
                         <button
                           onClick={(e) => handleStartRename(chat.id, chat.title, e)}
-                          className="p-1 text-slate-400 hover:text-slate-800 rounded"
+                          className="p-1 text-slate-400 hover:text-slate-800 rounded transition-colors"
                           title="Rename"
                         >
                           <Edit2 className="h-3 w-3" />
                         </button>
                         <button
                           onClick={(e) => handleDeleteClick(chat.id, e)}
-                          className="p-1 text-slate-400 hover:text-red-600 rounded"
+                          className="p-1 text-slate-400 hover:text-red-600 rounded transition-colors"
                           title="Delete"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -226,7 +273,7 @@ export function Sidebar() {
         </div>
 
         {/* User Profile Footer */}
-        <div className="border-t border-slate-200 bg-slate-50/80 p-3">
+        <div className="border-t border-slate-200 bg-slate-50/80 p-3 shrink-0">
           <div className="flex items-center justify-between rounded-xl p-2 hover:bg-slate-100 transition-colors">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="h-8 w-8 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center font-bold text-emerald-800 text-xs shrink-0">

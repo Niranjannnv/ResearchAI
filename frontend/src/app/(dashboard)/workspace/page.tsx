@@ -18,16 +18,16 @@ export default function WorkspacePage() {
     <div className="flex h-full flex-col bg-slate-50/40">
       <Header title="Research Fleet & Workspace Operations" />
 
-      <div className="flex-1 overflow-y-auto p-6 max-w-5xl mx-auto w-full space-y-8">
+      <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 max-w-5xl mx-auto w-full space-y-6 sm:space-y-8">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Multi-Agent Fleet Topology</h2>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900">Multi-Agent Fleet Topology</h2>
           <p className="text-xs text-slate-600 mt-1 font-medium">
             Real-time status of backend child agents coordinated by the Mother Agent orchestrator
           </p>
         </div>
 
         {/* Status Metrics */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
           {[
             { label: "Active Child Agents", val: "8 Online", icon: Cpu, color: "text-emerald-700 bg-emerald-50 border border-emerald-200" },
             { label: "Connected Databases", val: "9 APIs", icon: Database, color: "text-blue-700 bg-blue-50 border border-blue-200" },
@@ -36,13 +36,13 @@ export default function WorkspacePage() {
           ].map((m, i) => {
             const Icon = m.icon;
             return (
-              <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-white shadow-xs space-y-2">
-                <div className={`h-8 w-8 rounded-xl ${m.color} flex items-center justify-center`}>
-                  <Icon className="h-4 w-4" />
+              <div key={i} className="p-3 sm:p-4 rounded-2xl border border-slate-200 bg-white shadow-xs space-y-1.5 sm:space-y-2">
+                <div className={`h-7 w-7 sm:h-8 sm:w-8 rounded-xl ${m.color} flex items-center justify-center`}>
+                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-slate-500">{m.label}</p>
-                  <p className="text-base font-bold text-slate-900 mt-0.5">{m.val}</p>
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 leading-tight">{m.label}</p>
+                  <p className="text-sm sm:text-base font-bold text-slate-900 mt-0.5">{m.val}</p>
                 </div>
               </div>
             );

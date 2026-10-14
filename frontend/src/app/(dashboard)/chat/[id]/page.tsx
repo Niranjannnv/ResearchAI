@@ -40,20 +40,20 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isCurrentChatStreaming, liveReport]);
 
-  const handleSend = (text: string) => {
+  const handleSend = (displayText: string, apiText: string) => {
     if (chatId) {
-      sendMessage(chatId, text);
+      sendMessage(chatId, apiText, displayText);
     }
   };
 
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-full flex-col bg-slate-50/40">
+    <div className="flex h-full flex-col bg-slate-50/40 min-w-0 max-w-full overflow-hidden">
       <Header title={currentChat?.title || "ResearchAI"} />
 
       {/* Message Stream */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full">
         {!hasMessages && !isCurrentChatStreaming ? (
           /* Clean & High-Contrast Empty State with Prompt Suggestions */
           <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center px-4 text-center space-y-6">
@@ -72,7 +72,7 @@ export default function ChatPage() {
           </div>
 
         ) : (
-          <div className="mx-auto max-w-4xl pb-12">
+          <div className="mx-auto max-w-4xl w-full px-2 sm:px-4 pb-12 min-w-0 max-w-full overflow-hidden">
             {messages.map((msg) => (
               <ChatMessage key={msg.id} message={msg} />
             ))}
@@ -86,7 +86,7 @@ export default function ChatPage() {
 
             {/* Live Generated Report Preview */}
             {isCurrentChatStreaming && liveReport && (
-              <div className="p-6">
+              <div className="p-1.5 sm:p-6 min-w-0 max-w-full overflow-hidden">
                 <ReportPreview content={liveReport} />
               </div>
             )}

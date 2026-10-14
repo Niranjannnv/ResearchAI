@@ -6,9 +6,10 @@ import { DownloadButton } from "@/components/reports/DownloadButton";
 import { ReportPreview } from "@/components/reports/ReportPreview";
 import { Report } from "@/types";
 import { api } from "@/lib/api";
-import { FileText, Calendar, Database, Eye, Trash2, ArrowRight } from "lucide-react";
+import { FileText, Calendar, Database, Eye, Trash2, ArrowLeft } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { cn } from "@/lib/utils";
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -16,6 +17,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [mobileShowDetail, setMobileShowDetail] = useState(false);
 
   const fetchReports = async () => {
     try {
@@ -36,6 +38,11 @@ export default function ReportsPage() {
     fetchReports();
   }, []);
 
+  const handleSelectReport = (report: Report) => {
+    setSelectedReport(report);
+    setMobileShowDetail(true);
+  };
+
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setPendingDeleteId(id);
@@ -47,7 +54,10 @@ export default function ReportsPage() {
     setConfirmOpen(false);
     await api.delete(`/reports/${pendingDeleteId}`);
     setReports(reports.filter((r) => r.id !== pendingDeleteId));
-    if (selectedReport?.id === pendingDeleteId) setSelectedReport(null);
+    if (selectedReport?.id === pendingDeleteId) {
+      setSelectedReport(null);
+      setMobileShowDetail(false);
+    }
     setPendingDeleteId(null);
   };
 
@@ -70,7 +80,12 @@ export default function ReportsPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Reports List */}
-        <div className="w-full sm:w-96 border-r border-slate-200 overflow-y-auto p-4 space-y-3 bg-white">
+        <div
+          className={cn(
+            "w-full sm:w-96 border-r border-slate-200 overflow-y-auto p-4 space-y-3 bg-white shrink-0",
+            mobileShowDetail ? "hidden sm:block" : "block"
+          )}
+        >
           <div className="flex items-center justify-between pb-2 border-b border-slate-200">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Generated Reports ({reports.length})
@@ -92,7 +107,7 @@ export default function ReportsPage() {
               return (
                 <div
                   key={report.id}
-                  onClick={() => setSelectedReport(report)}
+                  onClick={() => handleSelectReport(report)}
                   className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2 ${
                     isSelected
                       ? "bg-emerald-50/70 border-emerald-300 shadow-xs"
@@ -132,14 +147,31 @@ export default function ReportsPage() {
         </div>
 
         {/* Report Preview Panel */}
-        <div className="hidden sm:flex flex-1 flex-col overflow-y-auto p-6 bg-slate-50/50">
+        <div
+          className={cn(
+            "flex-1 flex-col overflow-y-auto p-4 sm:p-6 bg-slate-50/50 min-w-0",
+            mobileShowDetail ? "flex" : "hidden sm:flex"
+          )}
+        >
+          {/* Mobile Back Button */}
+          {mobileShowDetail && (
+            <button
+              type="button"
+              onClick={() => setMobileShowDetail(false)}
+              className="sm:hidden inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 px-3 py-2 rounded-lg shadow-2xs hover:bg-slate-50 w-fit mb-3"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to Reports List</span>
+            </button>
+          )}
+
           {selectedReport ? (
             <div className="max-w-4xl mx-auto w-full space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-3 py-1 rounded-full border border-emerald-300">
                   Report ID: {selectedReport.id.slice(0, 8)}
                 </span>
-                <DownloadButton reportId={selectedReport.id} />
+                {!selectedReport.content && <DownloadButton reportId={selectedReport.id} />}
               </div>
 
               {selectedReport.content ? (

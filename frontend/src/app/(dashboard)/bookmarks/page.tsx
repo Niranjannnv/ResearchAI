@@ -60,7 +60,7 @@ export default function BookmarksPage() {
       />
       <Header title="Saved Research Bookmarks & Annotations" />
 
-      <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full space-y-4">
+      <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 max-w-4xl mx-auto w-full space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-slate-200">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
             Saved Citations & Excerpts ({bookmarks.length})

@@ -15,7 +15,7 @@ interface AttachedDoc {
 }
 
 interface ChatInputProps {
-  onSendMessage: (content: string) => void;
+  onSendMessage: (displayText: string, apiText: string) => void;
   disabled?: boolean;
   isStreaming?: boolean;
 }
@@ -173,17 +173,25 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
       setIsListening(false);
     }
 
-    let finalPrompt = content.trim();
+    const userQuestion = content.trim();
 
-    // If a document is attached, bind it into the research query
+    // displayText: what appears in the chat bubble (clean, no document dump)
+    const displayText = attachedDoc
+      ? userQuestion
+        ? userQuestion
+        : `📄 Analyzing: ${attachedDoc.filename}`
+      : userQuestion;
+
+    // apiText: what is sent to the backend (includes full document context)
+    let apiText = userQuestion;
     if (attachedDoc) {
-      const docHeader = `[Attached Reference Document: ${attachedDoc.filename} (${attachedDoc.word_count} words)]\n--- Document Text Excerpt ---\n${attachedDoc.text.slice(0, 15000)}\n--- End Document ---`;
-      finalPrompt = finalPrompt
-        ? `${finalPrompt}\n\n${docHeader}`
+      const docHeader = `[Attached Reference Document: ${attachedDoc.filename} (${attachedDoc.word_count} words)]\n--- Document Text ---\n${attachedDoc.text.slice(0, 15000)}\n--- End Document ---`;
+      apiText = userQuestion
+        ? `${userQuestion}\n\n${docHeader}`
         : `Please analyze, verify, and cross-reference the following attached research document with scholarly literature:\n\n${docHeader}`;
     }
 
-    onSendMessage(finalPrompt);
+    onSendMessage(displayText, apiText);
     setContent("");
     setAttachedDoc(null);
     setUploadError(null);
@@ -201,7 +209,7 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+    <div className="mx-auto w-full max-w-3xl px-2.5 sm:px-4 pb-[env(safe-area-inset-bottom,0.5rem)] pt-1">
       {/* Hidden File Input */}
       <input
         type="file"
@@ -213,7 +221,7 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
 
       <form
         onSubmit={handleSubmit}
-        className={`relative rounded-2xl border bg-white px-4 py-2.5 shadow-sm transition-all focus-within:shadow-md ${
+        className={`relative rounded-2xl border bg-white px-3 sm:px-4 py-2 sm:py-2.5 shadow-sm transition-all focus-within:shadow-md ${
           isListening
             ? "border-emerald-500 ring-2 ring-emerald-500/20"
             : "border-slate-300 focus-within:border-emerald-600 focus-within:ring-2 focus-within:ring-emerald-500/15"
@@ -221,21 +229,19 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
       >
         {/* Attached Document Pill Card */}
         {attachedDoc && (
-          <div className="mb-2.5 flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-300/80 px-3 py-2 text-xs text-emerald-950 font-medium">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <FileText className="h-4 w-4 shrink-0 text-emerald-700" />
-              <div className="truncate">
-                <span className="font-semibold">{attachedDoc.filename}</span>
-                <span className="ml-2 text-[11px] text-emerald-700 font-normal">
-                  ({attachedDoc.page_count > 1 ? `${attachedDoc.page_count} pages, ` : ""}
-                  {attachedDoc.word_count.toLocaleString()} words)
-                </span>
-              </div>
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-300/80 px-2.5 py-2">
+            <FileText className="h-4 w-4 shrink-0 text-emerald-700" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-emerald-950 truncate">{attachedDoc.filename}</p>
+              <p className="text-[10px] text-emerald-700 font-medium mt-0.5">
+                {attachedDoc.page_count > 1 ? `${attachedDoc.page_count} pages · ` : ""}
+                {attachedDoc.word_count.toLocaleString()} words · Ready to analyze
+              </p>
             </div>
             <button
               type="button"
               onClick={removeAttachedDoc}
-              className="ml-2 rounded-md p-1 text-emerald-700 hover:bg-emerald-200/60 transition-colors"
+              className="ml-1 rounded-md p-1 text-emerald-700 hover:bg-emerald-200/60 transition-colors shrink-0"
               title="Remove attached document"
             >
               <X className="h-3.5 w-3.5" />
@@ -245,18 +251,21 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
 
         {/* Uploading indicator */}
         {isUploading && (
-          <div className="mb-2.5 flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-xs text-slate-800 font-medium">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600" />
-            <span>Parsing document text and extracting structure...</span>
+          <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
+            <Loader2 className="h-4 w-4 animate-spin text-emerald-600 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-slate-800">Parsing document...</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Extracting text and structure</p>
+            </div>
           </div>
         )}
 
         {/* Upload Error Banner */}
         {uploadError && (
-          <div className="mb-2.5 flex items-center justify-between rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
-            <span>{uploadError}</span>
-            <button type="button" onClick={() => setUploadError(null)}>
-              <X className="h-3.5 w-3.5" />
+          <div className="mb-2 flex items-start justify-between gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2">
+            <p className="text-xs text-red-700 flex-1">{uploadError}</p>
+            <button type="button" onClick={() => setUploadError(null)} className="shrink-0 mt-0.5">
+              <X className="h-3.5 w-3.5 text-red-500" />
             </button>
           </div>
         )}
@@ -265,7 +274,7 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
         {isListening && (
           <div className="mb-2 flex items-center gap-2 text-xs text-emerald-800 font-semibold animate-pulse">
             <span className="h-2 w-2 rounded-full bg-emerald-600 animate-ping" />
-            <span>Listening... Speak your research inquiry clearly</span>
+            <span>Listening... Speak your research inquiry</span>
           </div>
         )}
 
@@ -276,10 +285,10 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
           onKeyDown={handleKeyDown}
           placeholder={
             attachedDoc
-              ? `Ask a question about ${attachedDoc.filename} or press Enter to synthesize...`
+              ? `Ask a question about ${attachedDoc.filename}...`
               : isListening
               ? "Listening to voice input..."
-              : "Ask any research question or topic..."
+              : "Ask any research question..."
           }
           disabled={disabled}
           rows={1}
@@ -293,7 +302,7 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
               type="button"
               onClick={handleFileClick}
               disabled={isUploading || disabled}
-              className={`p-1.5 rounded-lg transition-colors ${
+              className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
                 attachedDoc
                   ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                   : "hover:bg-slate-100 hover:text-slate-800"
@@ -308,12 +317,12 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
               type="button"
               onClick={toggleVoiceInput}
               disabled={disabled}
-              className={`p-1.5 rounded-lg transition-all ${
+              className={`p-1.5 sm:p-2 rounded-lg transition-all ${
                 isListening
                   ? "bg-red-50 text-red-600 ring-2 ring-red-400/50 scale-105"
                   : "hover:bg-slate-100 hover:text-slate-800"
               }`}
-              title={isListening ? "Stop listening" : "Voice input (recognizes names & places)"}
+              title={isListening ? "Stop listening" : "Voice input"}
             >
               {isListening ? (
                 <MicOff className="h-4 w-4 animate-pulse" />
@@ -344,8 +353,8 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
         </div>
       </form>
 
-      <div className="text-center pt-2 text-[11px] text-slate-500 font-medium">
-        ResearchAI searches OpenAlex, PubMed, arXiv, Semantic Scholar, CORE, Europe PMC, and Books.
+      <div className="text-center pt-1.5 text-[10px] sm:text-[11px] text-slate-400 font-medium px-2 leading-tight">
+        Searches OpenAlex · PubMed · arXiv · Semantic Scholar · CORE · Europe PMC
       </div>
     </div>
   );

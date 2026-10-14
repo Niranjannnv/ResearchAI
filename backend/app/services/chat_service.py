@@ -155,6 +155,9 @@ class ChatService:
         )
         chat = result.scalar_one_or_none()
         if chat:
+            from datetime import datetime, timezone
             chat.title = title[:500]
+            chat.updated_at = datetime.now(timezone.utc)
             await self.db.flush()
+            await self.db.refresh(chat)
         return chat

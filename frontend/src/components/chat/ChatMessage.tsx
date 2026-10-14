@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { CitationCard } from "./CitationCard";
 import { ReportPreview } from "../reports/ReportPreview";
-import { DownloadButton } from "../reports/DownloadButton";
 import { api } from "@/lib/api";
 import { useChatStore } from "@/stores/chatStore";
 
@@ -98,8 +97,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   if (isUser) {
     return (
-      <div className="group flex gap-3 py-3 px-4 sm:px-6 justify-end">
-        <div className="flex flex-col items-end space-y-1.5 max-w-2xl w-full sm:w-auto">
+      <div className="group flex gap-2.5 sm:gap-3 py-2.5 sm:py-3 px-2 sm:px-6 justify-end">
+        <div className="flex flex-col items-end space-y-1.5 max-w-[88%] sm:max-w-2xl w-full sm:w-auto min-w-0">
           {isEditing ? (
             /* Inline Edit Box */
             <div className="w-full sm:w-[480px] rounded-2xl border-2 border-emerald-500 bg-white p-3 shadow-md">
@@ -133,14 +132,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
             </div>
           ) : (
             /* High-Contrast User Message Bubble */
-            <div className="rounded-2xl bg-slate-900 text-white px-4 py-2.5 text-sm leading-relaxed font-medium shadow-xs">
+            <div className="rounded-2xl bg-slate-900 text-white px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm leading-relaxed font-medium shadow-xs break-words max-w-full">
               {message.content}
             </div>
           )}
 
           {/* Action Bar (Copy & Edit) */}
           {!isEditing && (
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex md:hidden md:group-hover:flex items-center gap-1 transition-opacity">
               <button
                 type="button"
                 onClick={handleCopy}
@@ -166,31 +165,31 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
         </div>
 
-        <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-slate-800 text-white text-xs font-semibold shadow-xs">
-          <User className="h-4 w-4" />
+        <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 select-none items-center justify-center rounded-full bg-slate-800 text-white text-xs font-semibold shadow-xs">
+          <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="group flex gap-4 py-6 border border-slate-200/90 rounded-2xl bg-white px-5 sm:px-7 my-3 shadow-xs">
-      <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
-        <Sparkles className="h-4 w-4" />
+    <div className="group flex gap-2 sm:gap-4 py-3 sm:py-6 border border-slate-200/90 rounded-2xl bg-white px-2.5 sm:px-7 my-2 sm:my-3 shadow-xs min-w-0 max-w-full overflow-hidden">
+      <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 select-none items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
+        <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
       </div>
 
-      <div className="flex-1 space-y-3.5 max-w-4xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
+      <div className="flex-1 space-y-3 min-w-0 max-w-full overflow-hidden">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-900 shrink-0">
               ResearchAI
             </span>
-            <span className="text-[11px] text-slate-500 font-semibold">
+            <span className="hidden sm:inline text-[11px] text-slate-500 font-semibold truncate">
               Verified Scientific Intelligence Report
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Copy button */}
             <button
               type="button"
@@ -204,8 +203,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
                 <Copy className="h-3.5 w-3.5" />
               )}
             </button>
-
-            {reportId && <DownloadButton reportId={reportId} />}
 
             <button
               onClick={handleBookmark}
@@ -230,7 +227,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             </div>
           </div>
         ) : fetchedReport ? (
-          <div className="pt-1">
+          <div className="pt-1 min-w-0 max-w-full overflow-hidden">
             <ReportPreview content={fetchedReport} reportId={reportId} />
           </div>
         ) : loadingReport ? (
@@ -240,15 +237,37 @@ export function ChatMessage({ message }: ChatMessageProps) {
           </div>
         ) : (
           /* Rich Markdown & Interactive Suggestion Cards */
-          <div className="text-slate-800 leading-relaxed text-sm">
+          <div className="text-slate-800 leading-relaxed text-xs sm:text-sm overflow-hidden">
             <ReactMarkdown
               components={{
                 strong: ({ node, ...props }) => (
                   <span className="font-bold text-slate-900" {...props} />
                 ),
                 p: ({ node, ...props }) => (
-                  <p className="mb-3 last:mb-0 text-sm leading-relaxed text-slate-800" {...props} />
+                  <p className="mb-3 last:mb-0 leading-relaxed text-slate-800" {...props} />
                 ),
+                table: ({ node, ...props }) => (
+                  <div className="my-3 overflow-x-auto w-full rounded-lg border border-slate-200">
+                    <table className="min-w-full text-xs sm:text-sm border-collapse" {...props} />
+                  </div>
+                ),
+                th: ({ node, ...props }) => (
+                  <th className="bg-slate-50 px-3 py-2 text-left font-semibold text-slate-900 border-b border-slate-200" {...props} />
+                ),
+                td: ({ node, ...props }) => (
+                  <td className="px-3 py-2 text-slate-800 border-b border-slate-100" {...props} />
+                ),
+                pre: ({ node, ...props }) => (
+                  <div className="my-3 overflow-x-auto max-w-full rounded-xl bg-slate-900 p-3 sm:p-4 text-xs text-slate-100 font-mono">
+                    <pre {...props} />
+                  </div>
+                ),
+                code: ({ node, inline, ...props }: any) =>
+                  inline ? (
+                    <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px] sm:text-xs text-slate-800" {...props} />
+                  ) : (
+                    <code className="font-mono text-xs" {...props} />
+                  ),
                 ul: ({ node, ...props }) => (
                   <ul className="space-y-2 my-3 list-none pl-0" {...props} />
                 ),
@@ -267,14 +286,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
                           sendMessage(message.chat_id, rawString);
                         }
                       }}
-                      className="group/pill flex items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/90 hover:border-emerald-400 px-4 py-2.5 text-xs font-semibold text-emerald-950 cursor-pointer shadow-xs transition-all active:scale-[0.99]"
+                      className="group/pill flex items-center justify-between gap-2 sm:gap-3 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/90 hover:border-emerald-400 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold text-emerald-950 cursor-pointer shadow-xs transition-all active:scale-[0.99]"
                       title={`Click to research: "${rawString}"`}
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2 min-w-0">
                         <Sparkles className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
-                        <span className="font-semibold text-emerald-950">{children}</span>
+                        <span className="font-semibold text-emerald-950 break-words">{children}</span>
                       </div>
-                      <ArrowUpRight className="h-4 w-4 text-emerald-700 opacity-70 group-hover/pill:opacity-100 group-hover/pill:translate-x-0.5 group-hover/pill:-translate-y-0.5 transition-all shrink-0" />
+                      <ArrowUpRight className="h-4 w-4 text-emerald-700 opacity-70 group-hover/pill:opacity-100 group-hover/pill:translate-x-0.5 group-hover/pill:-translate-y-0.5 transition-all shrink-0 ml-1" />
                     </li>
                   );
                 },

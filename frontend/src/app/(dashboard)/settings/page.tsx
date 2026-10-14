@@ -39,10 +39,10 @@ export default function SettingsPage() {
     <div className="flex h-full flex-col bg-slate-50/40">
       <Header title="Account & Research Preferences" />
 
-      <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto w-full space-y-8">
-        <form onSubmit={handleSave} className="space-y-6">
+      <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 max-w-3xl mx-auto w-full space-y-6 sm:space-y-8">
+        <form onSubmit={handleSave} className="space-y-4 sm:space-y-6">
           {/* Profile Section */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <User className="h-4 w-4 text-emerald-600" />
               Researcher Profile
@@ -118,13 +118,13 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
             {isSaved && (
-              <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+              <span className="text-xs font-bold text-emerald-700 flex items-center justify-center gap-1 py-1">
                 <Check className="h-4 w-4" /> Preferences saved!
               </span>
             )}
-            <Button type="submit" disabled={saving} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+            <Button type="submit" disabled={saving} className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
               <Save className="h-4 w-4" />
               <span>{saving ? "Saving..." : "Save Preferences"}</span>
             </Button>
