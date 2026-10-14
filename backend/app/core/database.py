@@ -13,16 +13,28 @@ from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 # ─── Engine ───────────────────────────────────────────────────────────────────
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+connect_args = {}
+if "neon.tech" in db_url or "sslmode=" in db_url or "ssl=" in db_url:
+    connect_args["ssl"] = True
+    if "?" in db_url:
+        db_url = db_url.split("?")[0]
+
 engine_kwargs = {"echo": settings.APP_DEBUG}
-if not settings.DATABASE_URL.startswith("sqlite"):
+if not db_url.startswith("sqlite"):
     engine_kwargs.update({
         "pool_pre_ping": True,
         "pool_size": 10,
         "max_overflow": 20,
     })
+    if connect_args:
+        engine_kwargs["connect_args"] = connect_args
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    db_url,
     **engine_kwargs,
 )
 
