@@ -52,7 +52,9 @@ function LoginForm() {
     setGoogleLoading(true);
     setError(null);
     try {
-      const { data } = await api.get("/auth/google/login");
+      // Send current origin so backend can redirect back to this exact URL
+      const origin = window.location.origin;
+      const { data } = await api.get(`/auth/google/login?origin=${encodeURIComponent(origin)}`);
       if (data?.auth_url) {
         window.location.href = data.auth_url;
       } else {

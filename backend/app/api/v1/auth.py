@@ -1,4 +1,6 @@
 """Auth API endpoints."""
+import base64
+import json
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -103,13 +105,20 @@ async def get_me(current_user: CurrentUser):
 
 
 @router.get("/google/login")
-async def google_login():
-    """Get Google OAuth authorization URL."""
+async def google_login(origin: Optional[str] = None):
+    """Get Google OAuth authorization URL. Accepts optional origin to redirect back to."""
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env",
         )
+
+    # Encode the frontend origin in state so callback can redirect back correctly
+    frontend_origin = origin or settings.FRONTEND_URL
+    state = base64.urlsafe_b64encode(
+        json.dumps({"origin": frontend_origin}).encode()
+    ).decode()
+
     auth_url = (
         "https://accounts.google.com/o/oauth2/v2/auth"
         f"?client_id={settings.GOOGLE_CLIENT_ID}"
@@ -118,6 +127,7 @@ async def google_login():
         "&scope=openid email profile"
         "&access_type=offline"
         "&prompt=select_account"
+        f"&state={state}"
     )
     return {"auth_url": auth_url, "client_id": settings.GOOGLE_CLIENT_ID}
 
@@ -170,14 +180,32 @@ async def google_callback(
     code: Optional[str] = None,
     error: Optional[str] = None,
     error_description: Optional[str] = None,
+    state: Optional[str] = None,
 ):
     """Handle Google OAuth browser callback and redirect to frontend with tokens."""
     import httpx
     from fastapi.responses import RedirectResponse
 
+    # Decode state to get the frontend origin to redirect back to
+    frontend_origin = settings.FRONTEND_URL
+    if state:
+        try:
+            state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+            candidate = state_data.get("origin", "")
+            # Allow any vercel.app or localhost origin for safety
+            if candidate and (
+                candidate.endswith(".vercel.app")
+                or candidate.startswith("http://localhost")
+                or candidate.startswith("http://127.0.0.1")
+                or candidate == settings.FRONTEND_URL
+            ):
+                frontend_origin = candidate
+        except Exception:
+            pass  # Fall back to default FRONTEND_URL
+
     # User cancelled or denied access — redirect cleanly back to login
     if error or not code:
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?cancelled=1")
+        return RedirectResponse(url=f"{frontend_origin}/login?cancelled=1")
 
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
@@ -214,6 +242,6 @@ async def google_callback(
         avatar_url=user_info.get("picture"),
     )
 
-    # Redirect user back to Next.js frontend with tokens in URL fragment
-    redirect_url = f"{settings.FRONTEND_URL}/login#access_token={token_data.access_token}&refresh_token={token_data.refresh_token}"
+    # Redirect back to whichever frontend origin the user came from
+    redirect_url = f"{frontend_origin}/login#access_token={token_data.access_token}&refresh_token={token_data.refresh_token}"
     return RedirectResponse(url=redirect_url)
