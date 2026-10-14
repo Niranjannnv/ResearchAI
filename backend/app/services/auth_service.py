@@ -71,6 +71,16 @@ class AuthService:
         if not user.is_active:
             raise ValueError("Account is disabled")
 
+        # Fire login notification email in background (non-blocking)
+        try:
+            from app.services.email_service import EmailService
+            import asyncio
+            asyncio.create_task(
+                EmailService().send_login_email(user.email, user.full_name, login_method="email")
+            )
+        except Exception:
+            pass
+
         return await self._create_token_pair(user)
 
     async def refresh_tokens(self, refresh_token: str) -> TokenResponse:
@@ -150,6 +160,16 @@ class AuthService:
                 asyncio.create_task(EmailService().send_welcome_email(user.email, user.full_name))
             except Exception:
                 pass
+
+        # Send login notification for returning Google users
+        try:
+            from app.services.email_service import EmailService
+            import asyncio
+            asyncio.create_task(
+                EmailService().send_login_email(user.email, user.full_name, login_method="google")
+            )
+        except Exception:
+            pass
 
         return await self._create_token_pair(user)
 
