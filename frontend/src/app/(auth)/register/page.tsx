@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sparkles, ArrowRight, User, Mail, Lock, ShieldCheck, Check, X } from "lucide-react";
+import { Sparkles, ArrowRight, Mail, Lock, ShieldCheck, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/authStore";
@@ -14,7 +14,6 @@ export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
-  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +37,6 @@ export default function RegisterPage() {
       await api.post("/auth/register", {
         email,
         username,
-        full_name: fullName || undefined,
         password,
       });
 
@@ -75,20 +73,6 @@ export default function RegisterPage() {
 
 
         <form onSubmit={handleRegister} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gray-700">Full Name</label>
-            <div className="relative">
-              <Input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Dr. Jane Doe"
-                className="pl-9 text-xs"
-              />
-              <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            </div>
-          </div>
-
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-gray-700">Username</label>
             <Input
