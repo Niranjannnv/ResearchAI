@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.schemas.auth import (
     ChangePasswordRequest,
     GoogleAuthRequest,
+    GoogleCredentialRequest,
     LoginRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
