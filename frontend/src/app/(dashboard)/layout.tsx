@@ -31,9 +31,9 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-slate-50">
+    <div className="fixed inset-0 flex h-[100dvh] w-full overflow-hidden bg-slate-50 select-none">
       <Sidebar />
-      <main className="flex flex-1 flex-col overflow-hidden bg-slate-50/60 min-w-0">
+      <main className="flex flex-1 flex-col overflow-hidden bg-slate-50/60 min-w-0 h-full relative">
         {children}
       </main>
     </div>

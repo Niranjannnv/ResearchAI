@@ -79,16 +79,16 @@
   padding-bottom: env(safe-area-inset-bottom, 0.75rem);
 }
 
-/* Mobile viewport height fix — fixes the "only seeing half" bug on mobile browsers.
-   Mobile browsers shrink/expand the viewport as the address bar hides/shows.
-   dvh (dynamic viewport height) accounts for this correctly. */
-html {
-  height: -webkit-fill-available; /* iOS Safari fallback */
-}
-
+/* Mobile viewport height fix — prevents document-level bounce/scroll on mobile browsers.
+   Locked to 100dvh with touch scrolling inside inner containers. */
+html,
 body {
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-  min-height: 100dvh;
+  height: 100%;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
 }
 

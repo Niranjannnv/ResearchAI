@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="bg-white text-gray-900 antialiased overflow-x-hidden w-full">
-      <body className="min-h-screen bg-white font-sans text-gray-900 overflow-x-hidden w-full">
+    <html lang="en" className="h-full w-full bg-white text-gray-900 antialiased overflow-hidden">
+      <body className="h-full w-full bg-white font-sans text-gray-900 overflow-hidden fixed inset-0">
         {children}
       </body>
     </html>

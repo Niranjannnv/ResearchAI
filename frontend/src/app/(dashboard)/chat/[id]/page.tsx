@@ -10,6 +10,33 @@ import { ReportPreview } from "@/components/reports/ReportPreview";
 import { useChatStore } from "@/stores/chatStore";
 import { Sparkles } from "lucide-react";
 
+const SUGGESTED_TOPICS = [
+  {
+    icon: "🧬",
+    title: "CRISPR Base Editing",
+    desc: "Clinical trials & safety outcomes",
+    query: "Recent breakthroughs in CRISPR-Cas9 base editing and clinical trial outcomes for genetic disorders",
+  },
+  {
+    icon: "⚡",
+    title: "Quantum Computing",
+    desc: "NISQ error mitigation advances",
+    query: "Current error mitigation techniques in NISQ quantum computing architectures",
+  },
+  {
+    icon: "🧠",
+    title: "LLM Reasoning",
+    desc: "Test-time compute scaling",
+    query: "Evaluation of test-time compute vs pre-training scaling laws for mathematical reasoning in LLMs",
+  },
+  {
+    icon: "🔋",
+    title: "Solid-State Batteries",
+    desc: "Electrolyte interfacial stability",
+    query: "Recent advances in solid-state lithium battery electrolyte interfacial stability and conductivity",
+  },
+];
+
 export default function ChatPage() {
   const params = useParams();
   const chatId = params?.id as string;
@@ -52,56 +79,100 @@ export default function ChatPage() {
     <div className="flex h-full flex-col bg-slate-50/40 min-w-0 max-w-full overflow-hidden">
       <Header title={currentChat?.title || "ResearchAI"} />
 
-      {/* Message Stream */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full">
-        {!hasMessages && !isCurrentChatStreaming ? (
-          /* Clean & High-Contrast Empty State with Prompt Suggestions */
-          <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center px-4 text-center space-y-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100/80 text-emerald-700 border border-emerald-300 shadow-xs">
-              <Sparkles className="h-7 w-7" />
+      {!hasMessages && !isCurrentChatStreaming ? (
+        /* FIXED Centered Search Home on Main Page */
+        <div className="flex-1 flex flex-col items-center justify-center px-3 sm:px-6 overflow-hidden select-none">
+          <div className="w-full max-w-2xl flex flex-col items-center text-center my-auto">
+            {/* Sparkle AI Icon */}
+            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-emerald-100/90 text-emerald-700 border border-emerald-300 shadow-xs mb-3 sm:mb-4">
+              <Sparkles className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
 
-            <div className="space-y-2">
-              <h2 className="text-xl font-bold tracking-tight text-slate-900">
+            {/* Title & Subtitle */}
+            <div className="space-y-1.5 sm:space-y-2 max-w-md sm:max-w-lg mb-4 sm:mb-6">
+              <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
                 What would you like to research today?
-              </h2>
-              <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed px-2">
                 Enter any scientific inquiry, clinical hypothesis, or multidisciplinary query to synthesize verified literature.
               </p>
             </div>
-          </div>
 
-        ) : (
-          <div className="mx-auto max-w-4xl w-full px-2 sm:px-4 pb-12 min-w-0 max-w-full overflow-hidden">
-            {messages.map((msg) => (
-              <ChatMessage key={msg.id} message={msg} />
-            ))}
-
-            {isCurrentChatStreaming && (
-              <StreamingMessage
-                status={streamStatus}
-                activeAgents={activeAgents}
+            {/* Front-and-Center Search Input */}
+            <div className="w-full mb-3 sm:mb-4">
+              <ChatInput
+                onSendMessage={handleSend}
+                disabled={isCurrentChatStreaming}
+                isStreaming={isCurrentChatStreaming}
+                centered={true}
               />
-            )}
+            </div>
 
-            {/* Live Generated Report Preview */}
-            {isCurrentChatStreaming && liveReport && (
-              <div className="p-1.5 sm:p-6 min-w-0 max-w-full overflow-hidden">
-                <ReportPreview content={liveReport} />
+            {/* Curated Suggestion Chips */}
+            <div className="w-full max-w-xl">
+              <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                Suggested Research Inquiries
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+                {SUGGESTED_TOPICS.map((topic, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSend(topic.title, topic.query)}
+                    className="group flex items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white/95 hover:bg-emerald-50/80 hover:border-emerald-300/80 px-3 py-2 text-xs text-slate-700 hover:text-emerald-950 transition-all shadow-2xs hover:shadow-xs active:scale-[0.99]"
+                  >
+                    <span className="text-sm shrink-0 group-hover:scale-110 transition-transform">
+                      {topic.icon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-900 group-hover:text-emerald-950 truncate text-xs">
+                        {topic.title}
+                      </p>
+                      <p className="text-[10px] text-slate-500 group-hover:text-emerald-800/80 truncate">
+                        {topic.desc}
+                      </p>
+                    </div>
+                  </button>
+                ))}
               </div>
-            )}
-
-            <div ref={messagesEndRef} />
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* Active Research Chat Feed + Bottom Fixed Input Bar */
+        <>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full">
+            <div className="mx-auto max-w-4xl w-full px-2 sm:px-4 pb-8 min-w-0 max-w-full overflow-hidden">
+              {messages.map((msg) => (
+                <ChatMessage key={msg.id} message={msg} />
+              ))}
 
-      {/* Input Bar */}
-      <ChatInput
-        onSendMessage={handleSend}
-        disabled={isCurrentChatStreaming}
-        isStreaming={isCurrentChatStreaming}
-      />
+              {isCurrentChatStreaming && (
+                <StreamingMessage
+                  status={streamStatus}
+                  activeAgents={activeAgents}
+                />
+              )}
+
+              {/* Live Generated Report Preview */}
+              {isCurrentChatStreaming && liveReport && (
+                <div className="p-1.5 sm:p-6 min-w-0 max-w-full overflow-hidden">
+                  <ReportPreview content={liveReport} />
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* Bottom Docked Input Bar during conversation */}
+          <ChatInput
+            onSendMessage={handleSend}
+            disabled={isCurrentChatStreaming}
+            isStreaming={isCurrentChatStreaming}
+            centered={false}
+          />
+        </>
+      )}
     </div>
   );
 }

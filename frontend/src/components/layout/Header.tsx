@@ -13,7 +13,7 @@ export function Header({ title = "ResearchAI Studio", domain }: HeaderProps) {
   const { toggleMobileSidebar } = useUIStore();
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-md px-3 sm:px-6 z-10 select-none shadow-2xs shrink-0">
+    <header className="sticky top-0 z-20 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-md px-3 sm:px-6 select-none shadow-2xs shrink-0">
       <div className="flex items-center gap-2.5 min-w-0">
         {/* Mobile Hamburger Menu Toggle */}
         <button

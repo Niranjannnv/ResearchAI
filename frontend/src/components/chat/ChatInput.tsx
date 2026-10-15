@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { ArrowUp, Paperclip, Mic, MicOff, FileText, X, Loader2, Square } from "lucide-react";
 import { api } from "@/lib/api";
 import { useChatStore } from "@/stores/chatStore";
+import { cn } from "@/lib/utils";
 
 interface AttachedDoc {
   filename: string;
@@ -18,9 +19,15 @@ interface ChatInputProps {
   onSendMessage: (displayText: string, apiText: string) => void;
   disabled?: boolean;
   isStreaming?: boolean;
+  centered?: boolean;
 }
 
-export function ChatInput({ onSendMessage, disabled, isStreaming = false }: ChatInputProps) {
+export function ChatInput({
+  onSendMessage,
+  disabled,
+  isStreaming = false,
+  centered = false,
+}: ChatInputProps) {
   const { stopStreaming } = useChatStore();
   const [content, setContent] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -209,7 +216,14 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-2.5 sm:px-4 pb-[env(safe-area-inset-bottom,0.5rem)] pt-1">
+    <div
+      className={cn(
+        "mx-auto w-full transition-all",
+        centered
+          ? "max-w-2xl px-2 sm:px-0"
+          : "max-w-3xl px-2.5 sm:px-4 pb-[env(safe-area-inset-bottom,0.5rem)] pt-1"
+      )}
+    >
       {/* Hidden File Input */}
       <input
         type="file"
@@ -221,11 +235,13 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
 
       <form
         onSubmit={handleSubmit}
-        className={`relative rounded-2xl border bg-white px-3 sm:px-4 py-2 sm:py-2.5 shadow-sm transition-all focus-within:shadow-md ${
-          isListening
-            ? "border-emerald-500 ring-2 ring-emerald-500/20"
-            : "border-slate-300 focus-within:border-emerald-600 focus-within:ring-2 focus-within:ring-emerald-500/15"
-        }`}
+        className={cn(
+          "relative rounded-2xl border bg-white transition-all",
+          centered
+            ? "px-3.5 sm:px-5 py-3 sm:py-3.5 shadow-md sm:shadow-lg hover:shadow-xl focus-within:shadow-xl focus-within:border-emerald-600 focus-within:ring-4 focus-within:ring-emerald-500/10 border-slate-300/90"
+            : "px-3 sm:px-4 py-2 sm:py-2.5 shadow-2xs focus-within:shadow-md focus-within:border-emerald-600 focus-within:ring-2 focus-within:ring-emerald-500/15 border-slate-300",
+          isListening && "border-emerald-500 ring-2 ring-emerald-500/20"
+        )}
       >
         {/* Attached Document Pill Card */}
         {attachedDoc && (
@@ -288,11 +304,16 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
               ? `Ask a question about ${attachedDoc.filename}...`
               : isListening
               ? "Listening to voice input..."
+              : centered
+              ? "Ask any research question, clinical hypothesis, or topic..."
               : "Ask any research question..."
           }
           disabled={disabled}
           rows={1}
-          className="w-full resize-none bg-transparent px-1 py-0.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:opacity-50 min-h-[26px] leading-relaxed font-normal"
+          className={cn(
+            "w-full resize-none bg-transparent px-1 py-0.5 text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:opacity-50 leading-relaxed font-normal",
+            centered ? "text-sm sm:text-base min-h-[36px] sm:min-h-[44px]" : "text-sm min-h-[26px]"
+          )}
         />
 
         <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-slate-100">
@@ -302,14 +323,16 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
               type="button"
               onClick={handleFileClick}
               disabled={isUploading || disabled}
-              className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
+              className={cn(
+                "rounded-lg transition-colors",
+                centered ? "p-2" : "p-1.5 sm:p-2",
                 attachedDoc
                   ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                   : "hover:bg-slate-100 hover:text-slate-800"
-              }`}
+              )}
               title="Upload reference files (.pdf, .docx, .txt, .md, .csv)"
             >
-              <Paperclip className="h-4 w-4" />
+              <Paperclip className={centered ? "h-4 w-4 sm:h-5 sm:w-5" : "h-4 w-4"} />
             </button>
 
             {/* Voice Input Microphone Button */}
@@ -317,17 +340,19 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
               type="button"
               onClick={toggleVoiceInput}
               disabled={disabled}
-              className={`p-1.5 sm:p-2 rounded-lg transition-all ${
+              className={cn(
+                "rounded-lg transition-all",
+                centered ? "p-2" : "p-1.5 sm:p-2",
                 isListening
                   ? "bg-red-50 text-red-600 ring-2 ring-red-400/50 scale-105"
                   : "hover:bg-slate-100 hover:text-slate-800"
-              }`}
+              )}
               title={isListening ? "Stop listening" : "Voice input"}
             >
               {isListening ? (
-                <MicOff className="h-4 w-4 animate-pulse" />
+                <MicOff className={cn("animate-pulse", centered ? "h-4 w-4 sm:h-5 sm:w-5" : "h-4 w-4")} />
               ) : (
-                <Mic className="h-4 w-4" />
+                <Mic className={centered ? "h-4 w-4 sm:h-5 sm:w-5" : "h-4 w-4"} />
               )}
             </button>
           </div>
@@ -336,18 +361,24 @@ export function ChatInput({ onSendMessage, disabled, isStreaming = false }: Chat
             <button
               type="button"
               onClick={stopStreaming}
-              className="h-7 w-7 rounded-full bg-slate-900 flex items-center justify-center text-white shadow-xs transition-all hover:bg-black hover:scale-105 active:scale-95"
+              className={cn(
+                "rounded-full bg-slate-900 flex items-center justify-center text-white shadow-xs transition-all hover:bg-black hover:scale-105 active:scale-95",
+                centered ? "h-8 w-8 sm:h-9 sm:w-9" : "h-7 w-7"
+              )}
               title="Stop / Pause research"
             >
-              <Square className="h-2.5 w-2.5 fill-current" />
+              <Square className={centered ? "h-3 w-3 fill-current" : "h-2.5 w-2.5 fill-current"} />
             </button>
           ) : (
             <button
               type="submit"
               disabled={(!content.trim() && !attachedDoc) || disabled}
-              className="h-7 w-7 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-xs transition-all hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed"
+              className={cn(
+                "rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-xs transition-all hover:bg-emerald-700 disabled:opacity-30 disabled:cursor-not-allowed",
+                centered ? "h-8 w-8 sm:h-9 sm:w-9" : "h-7 w-7"
+              )}
             >
-              <ArrowUp className="h-3.5 w-3.5" />
+              <ArrowUp className={centered ? "h-4 w-4" : "h-3.5 w-3.5"} />
             </button>
           )}
         </div>
