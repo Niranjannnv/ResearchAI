@@ -45,11 +45,7 @@ class AgentState(TypedDict):
 # ─── LLM Factory ─────────────────────────────────────────────────────────────
 
 def get_llm(temperature: Optional[float] = None) -> ChatGoogleGenerativeAI:
-    # Use a valid Gemini model name
     model = settings.LLM_MODEL or "gemini-1.5-flash"
-    # Normalize common typos / invalid names
-    if model in ("gemini-3.8-flash", "gemini-3.5-flash", "gemini-3-flash"):
-        model = "gemini-1.5-flash"
     return ChatGoogleGenerativeAI(
         model=model,
         google_api_key=settings.GOOGLE_API_KEY,
