@@ -10,33 +10,6 @@ import { ReportPreview } from "@/components/reports/ReportPreview";
 import { useChatStore } from "@/stores/chatStore";
 import { Sparkles } from "lucide-react";
 
-const SUGGESTED_TOPICS = [
-  {
-    icon: "🧬",
-    title: "CRISPR Base Editing",
-    desc: "Clinical trials & safety outcomes",
-    query: "Recent breakthroughs in CRISPR-Cas9 base editing and clinical trial outcomes for genetic disorders",
-  },
-  {
-    icon: "⚡",
-    title: "Quantum Computing",
-    desc: "NISQ error mitigation advances",
-    query: "Current error mitigation techniques in NISQ quantum computing architectures",
-  },
-  {
-    icon: "🧠",
-    title: "LLM Reasoning",
-    desc: "Test-time compute scaling",
-    query: "Evaluation of test-time compute vs pre-training scaling laws for mathematical reasoning in LLMs",
-  },
-  {
-    icon: "🔋",
-    title: "Solid-State Batteries",
-    desc: "Electrolyte interfacial stability",
-    query: "Recent advances in solid-state lithium battery electrolyte interfacial stability and conductivity",
-  },
-];
-
 export default function ChatPage() {
   const params = useParams();
   const chatId = params?.id as string;
@@ -99,41 +72,13 @@ export default function ChatPage() {
             </div>
 
             {/* Front-and-Center Search Input */}
-            <div className="w-full mb-3 sm:mb-4">
+            <div className="w-full">
               <ChatInput
                 onSendMessage={handleSend}
                 disabled={isCurrentChatStreaming}
                 isStreaming={isCurrentChatStreaming}
                 centered={true}
               />
-            </div>
-
-            {/* Curated Suggestion Chips */}
-            <div className="w-full max-w-xl">
-              <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                Suggested Research Inquiries
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
-                {SUGGESTED_TOPICS.map((topic, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSend(topic.title, topic.query)}
-                    className="group flex items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white/95 hover:bg-emerald-50/80 hover:border-emerald-300/80 px-3 py-2 text-xs text-slate-700 hover:text-emerald-950 transition-all shadow-2xs hover:shadow-xs active:scale-[0.99]"
-                  >
-                    <span className="text-sm shrink-0 group-hover:scale-110 transition-transform">
-                      {topic.icon}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-900 group-hover:text-emerald-950 truncate text-xs">
-                        {topic.title}
-                      </p>
-                      <p className="text-[10px] text-slate-500 group-hover:text-emerald-800/80 truncate">
-                        {topic.desc}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         </div>
