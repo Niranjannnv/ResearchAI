@@ -45,8 +45,13 @@ class AgentState(TypedDict):
 # ─── LLM Factory ─────────────────────────────────────────────────────────────
 
 def get_llm(temperature: Optional[float] = None) -> ChatGoogleGenerativeAI:
+    # Use a valid Gemini model name
+    model = settings.LLM_MODEL or "gemini-1.5-flash"
+    # Normalize common typos / invalid names
+    if model in ("gemini-3.8-flash", "gemini-3.5-flash", "gemini-3-flash"):
+        model = "gemini-1.5-flash"
     return ChatGoogleGenerativeAI(
-        model=settings.LLM_MODEL,
+        model=model,
         google_api_key=settings.GOOGLE_API_KEY,
         temperature=temperature if temperature is not None else settings.LLM_TEMPERATURE,
         max_output_tokens=settings.LLM_MAX_TOKENS,
@@ -313,12 +318,15 @@ Respond ONLY with valid JSON matching this schema:
         cleaned = _clean_json_str(response.content)
         state["summaries"] = json.loads(cleaned)
     except Exception as e:
-        logger.error("Summarizer failed", error=str(e))
+        logger.error("Summarizer LLM failed", error=str(e), model=settings.LLM_MODEL)
+        # Build a real fallback from actual source titles and abstracts
+        titles = [r.title for r in results[:8]]
+        abstracts = " ".join([(r.abstract or r.summary or "")[:200] for r in results[:5]])
         state["summaries"] = {
-            "synthesis": "Comprehensive research synthesis compiled from multi-agent discovery.",
-            "key_findings": [f"Evaluated evidence across {len(results)} verified research sources."],
+            "synthesis": f"Research synthesis across {len(results)} sources on '{state['query']}': {abstracts[:800] or 'Sources retrieved successfully.'}",
+            "key_findings": [f"Source {i+1}: {r.title}" for i, r in enumerate(results[:6])],
             "conflicts": [],
-            "gaps": [],
+            "gaps": [f"LLM synthesis error: {str(e)[:200]}"],
         }
 
     return state
@@ -484,21 +492,32 @@ Primary Evidence Base:
         cleaned = _clean_json_str(response.content)
         report_content = json.loads(cleaned)
     except Exception as e:
-        logger.error("Report generator failed", error=str(e))
+        logger.error("Report generator LLM failed", error=str(e), model=settings.LLM_MODEL)
+        # Build a meaningful fallback from real source data
+        source_titles = "\n".join(f"- {r.title} ({r.publication_date or 'n.d.'})" for r in ranked[:10])
+        abstracts_text = "\n\n".join(
+            f"{r.title}: {(r.abstract or r.summary or '')[:400]}"
+            for r in ranked[:5] if (r.abstract or r.summary)
+        )
         report_content = {
-            "executive_summary": summaries.get("synthesis", "Comprehensive research report compiled from multi-agent discovery."),
+            "executive_summary": f"Research on '{state['query']}' retrieved {len(ranked)} sources. LLM generation error: {str(e)[:300]}\n\nTop sources found:\n{source_titles}",
             "research_question": state["query"],
-            "background_and_context": "The investigated domain represents an active frontier of interdisciplinary research.",
-            "methodology": f"Multi-agent AI research executed across {len(ranked)} primary and scholarly sources.",
+            "background_and_context": abstracts_text or "Source abstracts not available.",
+            "methodology": f"Multi-agent AI research executed across {len(ranked)} primary and scholarly sources via academic, web, medical, and news agents.",
             "findings": [
-                {"section": "Primary Evidence Synthesis", "content": summaries.get("synthesis", ""), "key_takeaways": summaries.get("key_findings", [])[:3], "evidence": [r.title for r in ranked[:3]]}
+                {
+                    "section": "Retrieved Sources",
+                    "content": source_titles,
+                    "key_takeaways": [r.title for r in ranked[:5]],
+                    "evidence": [r.title for r in ranked[:3]]
+                }
             ],
-            "analysis": summaries.get("synthesis", ""),
+            "analysis": summaries.get("synthesis", "Analysis pending — LLM call failed."),
             "comparisons": [],
-            "practical_implications": "Translational insights indicate rapid integration across industry and clinical sectors.",
-            "conclusions": "The evidence reflects strong empirical momentum across investigated areas.",
-            "limitations": "Report generation encountered an error during detailed formatting.",
-            "future_directions": "Further research should evaluate longitudinal efficacy and scaling.",
+            "practical_implications": "See source list above for detailed findings.",
+            "conclusions": f"Found {len(ranked)} relevant sources on the topic. LLM report generation failed: {str(e)[:200]}",
+            "limitations": f"Report generation error: {str(e)[:300]}",
+            "future_directions": "Retry the query or check the LLM API key configuration.",
         }
 
     state["report"] = {
