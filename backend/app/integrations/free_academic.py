@@ -122,7 +122,6 @@ class EuropePMCClient(BaseAPIClient):
                     "resultType": "core",
                     "pageSize": min(max_results, 100),
                     "format": "json",
-                    "sort": "CITED desc",
                 },
             )
             results = []

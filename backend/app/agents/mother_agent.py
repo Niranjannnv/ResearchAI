@@ -17,6 +17,7 @@ from langgraph.graph import END, StateGraph
 
 from app.core.config import settings
 from app.schemas.research import ResearchPlan, SourceResult
+from app.utils.query_cleaner import normalize_query
 
 logger = structlog.get_logger(__name__)
 
@@ -123,6 +124,8 @@ def _clean_json_str(content: Any) -> str:
 
 async def planner_node(state: AgentState) -> AgentState:
     """Analyze the query and produce a structured research plan."""
+    # Normalize query typos first (e.g. 'artifical' -> 'artificial')
+    state["query"] = normalize_query(state["query"])
     logger.info("Planner: analyzing query", query=state["query"][:100])
     llm = get_llm(temperature=0.1)
 
@@ -130,16 +133,21 @@ async def planner_node(state: AgentState) -> AgentState:
 Your job is to analyze a user's research question and produce a structured execution plan.
 
 Guidelines for Agent Selection:
-- If the query is about breaking events, recent news, corporate actions, or company developments (e.g. "what happened yesterday at OpenAI", "recent events in Japan", "Tesla quarterly announcement"):
+- Normalize any typos or misspellings in the query and sub_queries (e.g. 'artifical' -> 'artificial', 'lerning' -> 'learning').
+- If the query is about breaking events, recent news, corporate actions, or company developments:
   - Set domain to "news", "technology", or "economics".
   - Always include "news" and "web" in agents_to_use.
   - Derive sub-queries with specific names, entities, and latest dates.
-- If the query is scholarly/scientific/medical:
-  - Include "academic" and/or "medical".
+- If the query is strictly about medicine, health, clinical trials, pharmacology, nursing, or human biology:
+  - Set domain to "medical".
+  - Include "medical", "academic", and/or "web".
+- If the query is about computer science, AI, engineering, technology, physics, mathematics, economics, legal, or social science:
+  - Set domain appropriately (e.g. "technology", "science", "economics").
+  - DO NOT include "medical" (unless it explicitly discusses medical/health applications). Use "academic", "web", "books", and "patent" as appropriate.
 
 Respond ONLY with valid JSON matching this schema:
 {
-  "query": "the original query",
+  "query": "the normalized query without typos",
   "domain": "one of: general|medical|science|technology|social|economics|legal|history|news",
   "sub_queries": ["list of 2-5 specific search queries derived from the main question"],
   "agents_to_use": ["list of agents from: academic|medical|web|news|books|patent|government|statistics"],
@@ -161,15 +169,29 @@ Respond ONLY with valid JSON matching this schema:
         logger.info("Plan created", domain=plan.domain, agents=plan.agents_to_use)
     except Exception as e:
         logger.warning("Planner fallback used", error=str(e)[:120])
+        q_lower = state["query"].lower()
+        is_medical = any(w in q_lower for w in ["medicine", "medical", "health", "clinical", "disease", "cancer", "patient", "drug", "therapy", "pharma", "hospital", "pediatric", "breast milk"])
+        is_news = any(w in q_lower for w in ["news", "today", "yesterday", "announced", "recent", "breaking", "update"])
+
+        if is_medical:
+            domain = "medical"
+            agents = ["medical", "academic", "web"]
+        elif is_news:
+            domain = "news"
+            agents = ["news", "web"]
+        else:
+            domain = "technology" if any(w in q_lower for w in ["ai", "artificial", "computer", "model", "algorithm", "code", "software", "data", "tech", "neural"]) else "general"
+            agents = ["academic", "web"]
+
         state["plan"] = ResearchPlan(
             query=state["query"],
-            domain="general",
+            domain=domain,
             sub_queries=[state["query"]],
-            agents_to_use=["academic", "web"],
+            agents_to_use=agents,
             reasoning="Standard research execution plan",
         )
-        state["active_agents"] = ["academic", "web"]
-        state["domain"] = "general"
+        state["active_agents"] = agents
+        state["domain"] = domain
 
     return state
 
@@ -245,15 +267,38 @@ async def aggregator_node(state: AgentState) -> AgentState:
 # ─── Node: Verifier ──────────────────────────────────────────────────────────
 
 async def verifier_node(state: AgentState) -> AgentState:
-    """Verify source credibility and flag questionable sources."""
+    """Verify source credibility and relevance to research query."""
     results = state.get("verified_results", [])
+    query = state.get("query", "").lower()
+
+    STOP_WORDS = {
+        "a", "an", "the", "and", "or", "in", "on", "at", "to", "for", "of",
+        "with", "by", "from", "as", "is", "are", "was", "were", "what",
+        "how", "why", "when", "where", "into", "versus", "vs", "about",
+    }
+    import re
+    query_tokens = [w for w in re.findall(r"\b[a-z0-9]+\b", query) if len(w) >= 3 and w not in STOP_WORDS]
+
     verified = []
     for source in results:
-        # Minimum confidence threshold
-        if source.confidence_score >= 0.3:
-            verified.append(source)
+        # Minimum confidence threshold (already factors in quality + relevance)
+        if source.confidence_score < 0.25:
+            continue
+
+        # Strict keyword sanity check if multi-token query
+        if len(query_tokens) >= 2:
+            title_lower = source.title.lower()
+            abstract_lower = (source.abstract or source.summary or "").lower()
+            has_title_kw = any(t in title_lower for t in query_tokens)
+            has_abstract_kw = any(t in abstract_lower for t in query_tokens)
+            # If zero query keywords are in title AND zero in abstract, drop it
+            if not has_title_kw and not has_abstract_kw:
+                continue
+
+        verified.append(source)
+
     state["verified_results"] = verified
-    logger.info("Verifier completed", verified=len(verified))
+    logger.info("Verifier completed", verified=len(verified), dropped=len(results) - len(verified))
     return state
 
 
@@ -289,9 +334,34 @@ async def deduplication_node(state: AgentState) -> AgentState:
 # ─── Node: Ranker ────────────────────────────────────────────────────────────
 
 async def ranker_node(state: AgentState) -> AgentState:
-    """Rank sources by confidence score (descending)."""
+    """Rank sources by confidence and direct query relevance, prioritizing exact topical matches."""
     results = state.get("deduplicated_results", [])
-    ranked = sorted(results, key=lambda r: r.confidence_score, reverse=True)
+    query = state.get("query", "").lower().strip()
+
+    import re
+    STOP_WORDS = {
+        "a", "an", "the", "and", "or", "in", "on", "at", "to", "for", "of",
+        "with", "by", "from", "as", "is", "are", "was", "were",
+    }
+    keywords = [w for w in re.findall(r"\b[a-z0-9]+\b", query) if len(w) >= 3 and w not in STOP_WORDS]
+
+    def rank_score(source: SourceResult) -> float:
+        score = source.confidence_score
+        title = source.title.lower()
+
+        # Direct phrase match in title gets major boost
+        if query and query in title:
+            score += 0.35
+        # All keywords in title
+        elif keywords and all(k in title for k in keywords):
+            score += 0.25
+        # Any keyword in title
+        elif keywords and any(k in title for k in keywords):
+            score += 0.10
+
+        return score
+
+    ranked = sorted(results, key=rank_score, reverse=True)
     # Keep top 40 sources for report generation
     state["ranked_results"] = ranked[:40]
     logger.info("Ranking completed", ranked=len(state["ranked_results"]))
@@ -694,6 +764,8 @@ async def stream_research(
     """
     from app.core.safety import moderate_query
 
+    query = normalize_query(query)
+
     # 1. Content Moderation & Policy Check (Abusive, Sexual, Harmful Queries)
     is_blocked, refusal_reason = moderate_query(query)
     if is_blocked:
@@ -708,6 +780,7 @@ async def stream_research(
         }
         return
 
+    query = normalize_query(query)
     clean_q = query.strip().lower().rstrip("!?.")
 
     # 1. Immediate Conversational Greeting / Short Query Interception
