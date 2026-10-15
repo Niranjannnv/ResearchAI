@@ -212,6 +212,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
         signal: controller.signal,
       });
 
+      if (!response.ok) {
+        let errText = "Failed to connect to research engine.";
+        try {
+          const errJson = await response.json();
+          errText = errJson.detail || errText;
+        } catch {
+          // not json
+        }
+        throw new Error(errText);
+      }
+
       if (!response.body) throw new Error("No response body");
 
       const reader = response.body.getReader();
@@ -326,12 +337,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return;
       }
       console.error("Stream failed", e);
-      set({
+      const errMsg: Message = {
+        id: "err-" + Date.now(),
+        chat_id: targetChatId,
+        role: "assistant",
+        content: `⚠️ **Research pipeline notification**: ${e?.message || "An issue occurred while running research. Please try again."}`,
+        created_at: new Date().toISOString(),
+      };
+      set((s) => ({
+        messages: [...s.messages, errMsg],
         isStreaming: false,
         streamingChatId: null,
-        streamStatus: "Research encountered an issue. Please try again.",
+        streamStatus: null,
         abortController: null,
-      });
+      }));
     }
   },
 }));

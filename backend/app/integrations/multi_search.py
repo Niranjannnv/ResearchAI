@@ -17,7 +17,10 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 import structlog
-from bs4 import BeautifulSoup
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
 
 from app.core.config import settings
 from app.integrations.base import BaseAPIClient

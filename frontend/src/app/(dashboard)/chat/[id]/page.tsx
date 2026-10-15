@@ -26,7 +26,11 @@ export default function ChatPage() {
     sendMessage,
   } = useChatStore();
 
-  const isCurrentChatStreaming = isStreaming && (streamingChatId === chatId || (chatId === "new" && streamingChatId === "new"));
+  const isCurrentChatStreaming =
+    isStreaming &&
+    (streamingChatId === chatId ||
+      chatId === "new" ||
+      Boolean(currentChat && streamingChatId === currentChat.id));
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -110,12 +114,14 @@ export default function ChatPage() {
           </div>
 
           {/* Bottom Docked Input Bar during conversation */}
-          <ChatInput
-            onSendMessage={handleSend}
-            disabled={isCurrentChatStreaming}
-            isStreaming={isCurrentChatStreaming}
-            centered={false}
-          />
+          <div className="shrink-0 w-full bg-slate-50/90 backdrop-blur-sm border-t border-slate-200/80 z-10">
+            <ChatInput
+              onSendMessage={handleSend}
+              disabled={isCurrentChatStreaming}
+              isStreaming={isCurrentChatStreaming}
+              centered={false}
+            />
+          </div>
         </>
       )}
     </div>
