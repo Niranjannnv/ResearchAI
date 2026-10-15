@@ -58,7 +58,56 @@ export function ChatInput({
 
   const baseTextRef = useRef<string>("");
 
-  // en-IN = English (India): understands Indian names, places & accents in English
+  /**
+   * Safely merges speech transcripts without repeating words/phrases.
+   * Fixes the mobile Android Web Speech API duplicate utterance bug
+   * where intermediate/final results contain overlapping or cumulative phrases.
+   */
+  const mergeTranscripts = (existing: string, incoming: string): string => {
+    const existingTrimmed = existing.trim();
+    const incomingTrimmed = incoming.trim();
+
+    if (!existingTrimmed) return incomingTrimmed;
+    if (!incomingTrimmed) return existingTrimmed;
+
+    // Exact duplicate
+    if (existingTrimmed.toLowerCase() === incomingTrimmed.toLowerCase()) {
+      return existingTrimmed;
+    }
+
+    // Incoming already starts with or contains the existing text (Android cumulative bug)
+    if (incomingTrimmed.toLowerCase().startsWith(existingTrimmed.toLowerCase())) {
+      return incomingTrimmed;
+    }
+
+    // Existing already ends with incoming
+    if (existingTrimmed.toLowerCase().endsWith(incomingTrimmed.toLowerCase())) {
+      return existingTrimmed;
+    }
+
+    // Overlap detection: find the longest matching word boundary
+    const existingWords = existingTrimmed.split(/\s+/);
+    const incomingWords = incomingTrimmed.split(/\s+/);
+
+    let maxOverlap = 0;
+    const maxCheck = Math.min(existingWords.length, incomingWords.length);
+
+    for (let len = maxCheck; len >= 1; len--) {
+      const existingSuffix = existingWords.slice(-len).join(" ").toLowerCase();
+      const incomingPrefix = incomingWords.slice(0, len).join(" ").toLowerCase();
+
+      if (existingSuffix === incomingPrefix) {
+        maxOverlap = len;
+        break;
+      }
+    }
+
+    if (maxOverlap > 0) {
+      return existingWords.concat(incomingWords.slice(maxOverlap)).join(" ");
+    }
+
+    return `${existingTrimmed} ${incomingTrimmed}`;
+  };
 
   // Voice speech-to-text handler
   const toggleVoiceInput = () => {
@@ -84,7 +133,7 @@ export function ChatInput({
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = "en-IN";    // English (India) — understands Indian names & places
+      recognition.lang = "en-IN"; // English (India) — understands Indian names, accents & places
       recognition.maxAlternatives = 3;
 
       recognition.onstart = () => {
@@ -94,22 +143,25 @@ export function ChatInput({
       };
 
       recognition.onresult = (event: any) => {
-        let final = "";
+        let sessionFinal = "";
         let interim = "";
 
         for (let i = 0; i < event.results.length; i++) {
           const item = event.results[i];
-          const transcript = item[0].transcript;
+          if (!item || !item[0]) continue;
+          const transcript = item[0].transcript?.trim();
+          if (!transcript) continue;
+
           if (item.isFinal) {
-            final += transcript + " ";
+            sessionFinal = mergeTranscripts(sessionFinal, transcript);
           } else {
-            interim += transcript;
+            interim = mergeTranscripts(interim, transcript);
           }
         }
 
         const base = baseTextRef.current;
-        const prefix = base ? `${base} ` : "";
-        const fullText = (prefix + final + interim).trimStart();
+        const spoken = mergeTranscripts(sessionFinal, interim);
+        const fullText = base ? mergeTranscripts(base, spoken) : spoken;
         setContent(fullText);
       };
 
