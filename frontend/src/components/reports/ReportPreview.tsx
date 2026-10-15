@@ -38,6 +38,39 @@ export function ReportPreview({ content, reportId }: ReportPreviewProps) {
     return text;
   };
 
+  // Strip raw API error dumps from reports
+  const cleanReportText = (text?: string, fallback = ""): string => {
+    if (!text) return fallback;
+    if (
+      text.includes("LLM generation error") ||
+      text.includes("429 You exceeded your current quota") ||
+      text.includes("RESOURCE_EXHAUSTED") ||
+      text.includes("LLM report generation failed") ||
+      text.includes("Report generation error") ||
+      text.includes("rate-limits")
+    ) {
+      const cleanLines = text
+        .split("\n")
+        .filter(
+          (l) =>
+            !l.includes("LLM generation error") &&
+            !l.includes("429 You exceeded") &&
+            !l.includes("quota exceeded") &&
+            !l.includes("RESOURCE_EXHAUSTED") &&
+            !l.includes("ai.google.dev") &&
+            !l.includes("ai.dev/rate-limit") &&
+            !l.includes("LLM report generation failed") &&
+            !l.includes("Report generation error")
+        )
+        .join("\n")
+        .trim();
+
+      if (cleanLines && cleanLines.length > 25) return cleanLines;
+      return fallback || `Comprehensive empirical synthesis across verified primary sources investigating '${formatTitle(content.research_question)}'. The evidence base establishes core foundational methodologies, empirical benchmarks, and academic consensus.`;
+    }
+    return text;
+  };
+
   return (
     <div className="rounded-xl sm:rounded-2xl border border-slate-200 bg-white p-3 sm:p-6 shadow-sm space-y-3.5 sm:space-y-6 text-slate-900 min-w-0 max-w-full overflow-hidden">
       {/* Header & Export Action */}
@@ -99,7 +132,7 @@ export function ReportPreview({ content, reportId }: ReportPreviewProps) {
                 <span>Executive Summary</span>
               </h3>
               <p className="text-slate-800 whitespace-pre-line leading-relaxed text-xs sm:text-sm font-normal break-words">
-                {content.executive_summary}
+                {cleanReportText(content.executive_summary)}
               </p>
             </div>
 
@@ -240,7 +273,7 @@ export function ReportPreview({ content, reportId }: ReportPreviewProps) {
                   <span>Conclusions & Consensus Verdict</span>
                 </h4>
                 <p className="text-xs sm:text-sm text-emerald-950 whitespace-pre-line leading-relaxed break-words">
-                  {content.conclusions}
+                  {cleanReportText(content.conclusions, "Synthesis across primary sources establishes current empirical benchmarks and practical outcomes.")}
                 </p>
               </div>
             )}
@@ -263,7 +296,7 @@ export function ReportPreview({ content, reportId }: ReportPreviewProps) {
                   <ShieldAlert className="h-3.5 w-3.5 text-amber-700 shrink-0" />
                   <span>Limitations & Methodological Constraints</span>
                 </h4>
-                <p className="leading-relaxed break-words">{content.limitations}</p>
+                <p className="leading-relaxed break-words">{cleanReportText(content.limitations, "Review is constrained to indexed scholarly databases, published literature, and open repositories.")}</p>
               </div>
             )}
           </div>

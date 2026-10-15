@@ -66,9 +66,9 @@ export function DownloadButton({ reportId, className }: DownloadButtonProps) {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-72 rounded-xl border border-gray-200 bg-white p-1.5 shadow-float z-30 space-y-1">
-            <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl z-50 space-y-1">
+            <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               Select Export Format
             </div>
             {formats.map((fmt) => {
